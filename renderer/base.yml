@@ -4,9 +4,18 @@ use_directory_urls: true
 theme:
   name: material
   font: false
+  # The colour scheme toggle (palette) is generated per build with labels from data/i18n.
   features:
+    - navigation.indexes
+    - navigation.top
     - search.highlight
     - content.code.copy
+# Visual system: design tokens and component styles (renderer/theme/), copied into every build.
+extra_css:
+  - stylesheets/teaching-hub/tokens.css
+  - stylesheets/teaching-hub/theme.css
+extra:
+  generator: false
 markdown_extensions:
   - admonition
   - attr_list
@@ -14,6 +23,8 @@ markdown_extensions:
   - tables
   - toc:
       permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
 validation:
   nav:
     omitted_files: warn

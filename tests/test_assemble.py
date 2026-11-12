@@ -68,8 +68,13 @@ def test_task_set_page_is_numbered_and_keeps_task_anchors(sample, tmp_path):
     assert "# Zestaw 1 · Temat zastępczy alfa" in alpha
     assert "### Zadanie 1. Tytuł zastępczy zadania pierwszego {#a1}" in alpha
     assert "### Zadanie 2. Tytuł zastępczy zadania drugiego {#a2}" in alpha
-    assert "### Zadanie 3. Tytuł zastępczy zadania dodatkowego (opcjonalne) {#a3}" in alpha
+    assert "### Zadanie 3. Tytuł zastępczy zadania dodatkowego " + OPTIONAL_BADGE + " {#a3}" in alpha
     assert "### To nie jest zadanie, tylko blok kodu" in alpha  # code block untouched
+
+
+# The parentheses are visually hidden; screen readers and the table of contents read "(opcjonalne)".
+OPTIONAL_BADGE = '<span class="th-badge th-badge--optional"><span class="th-sr">(</span>opcjonalne<span class="th-sr">)</span></span>'
+LANG_BADGE_EN = '<span class="th-badge th-badge--lang"><span class="th-sr">Język materiału: </span>EN</span>'
 
 
 def _line_with(text: str, needle: str) -> str:
@@ -83,7 +88,7 @@ def test_task_materials_are_rendered_below_their_task(sample, tmp_path):
     alpha = page(out, "pl", "courses", "sample-course-a/task-sets/alpha.md")
     setup = "https://github.com/michalmaj/python-dev-setup-for-beginners/blob/main/docs/00_start_here.md"
     assert alpha.index("{#a2}") < alpha.index(setup) < alpha.index("{#a3}")
-    assert _line_with(alpha, setup).endswith("· EN")
+    assert LANG_BADGE_EN in _line_with(alpha, setup)
 
 
 def test_material_with_tag_links_to_tree_and_shows_the_ref(sample, tmp_path):
@@ -187,3 +192,79 @@ def test_preview_is_refused_in_ci(sample, tmp_path, monkeypatch, variable):
     monkeypatch.setenv(variable, "true")
     with pytest.raises(PreviewNotAllowed):
         build(sample, tmp_path, include_drafts=True)
+
+
+# ---------------------------------------------------------------- presentation hooks (CSS classes only)
+
+
+@pytest.mark.parametrize(
+    "lang,space,rel,kind",
+    [
+        ("pl", "home", "index.md", "home"),
+        ("pl", "home", "licensing.md", "licensing"),
+        ("pl", "courses", "index.md", "catalog"),
+        ("pl", "courses", "sample-course-a/index.md", "course"),
+        ("pl", "courses", "sample-course-a/task-sets/alpha.md", "task-set"),
+        ("pl", "courses", "sample-course-a/guides/guidelines.md", "guide"),
+    ],
+)
+def test_every_generated_page_carries_its_page_type(sample, tmp_path, lang, space, rel, kind):
+    out, _ = build(sample, tmp_path)
+    assert f'<div class="th-page" data-th-page="{kind}" hidden></div>' in page(out, lang, space, rel)
+
+
+def test_catalog_renders_each_visible_course_as_a_card(sample, tmp_path):
+    out, _ = build(sample, tmp_path)
+    catalog = page(out, "pl", "courses", "index.md")
+    assert '<div class="th-cards" markdown>' in catalog
+    assert '<div class="th-card" markdown>\n\n## [Przedmiot przykładowy A](sample-course-a/index.md)' in catalog
+    assert catalog.count('<div class="th-card" markdown>') == 2
+
+
+def test_course_page_renders_task_sets_as_cards_with_their_number(sample, tmp_path):
+    out, _ = build(sample, tmp_path)
+    course = page(out, "pl", "courses", "sample-course-a/index.md")
+    card = course[course.index('<div class="th-card th-card--set" markdown>'):]
+    assert '<p class="th-eyebrow">Zestaw 1</p>' in card
+    assert "### [Temat zastępczy alfa](task-sets/alpha.md)" in card
+
+
+def test_breadcrumbs_are_a_labelled_navigation_landmark_above_the_title(sample, tmp_path):
+    out, _ = build(sample, tmp_path)
+    alpha = page(out, "pl", "courses", "sample-course-a/task-sets/alpha.md")
+    nav = '<nav class="th-breadcrumbs" aria-label="Ścieżka nawigacji" markdown="span">'
+    assert nav in alpha
+    assert alpha.index(nav) < alpha.index("# Zestaw 1 · Temat zastępczy alfa")
+
+
+def test_home_space_entries_are_cards_linking_to_the_space(sample, tmp_path):
+    out, _ = build(sample, tmp_path)
+    home = page(out, "pl", "home", "index.md")
+    assert '<div class="th-card th-card--space" markdown>' in home
+    assert "## [Dla studentów](/courses/)" in home
+
+
+def test_theme_stylesheets_are_copied_into_every_build_and_linked(sample, tmp_path):
+    out, builds = build(sample, tmp_path)
+    for lang, space in builds:
+        docs = out / lang / space / "docs" / "stylesheets" / "teaching-hub"
+        assert (docs / "tokens.css").is_file() and (docs / "theme.css").is_file()
+        assert config(out, lang, space)["extra_css"][:2] == [
+            "stylesheets/teaching-hub/tokens.css",
+            "stylesheets/teaching-hub/theme.css",
+        ]
+
+
+def test_space_specific_stylesheet_is_linked_only_in_that_space(sample, tmp_path):
+    (sample / "renderer/theme/space-courses.css").write_text(":root { --th-accent: #000000; }\n", encoding="utf-8")
+    out, _ = build(sample, tmp_path)
+    assert "stylesheets/teaching-hub/space-courses.css" in config(out, "pl", "courses")["extra_css"]
+    assert "stylesheets/teaching-hub/space-courses.css" not in config(out, "pl", "home")["extra_css"]
+
+
+def test_colour_scheme_toggle_is_labelled_in_the_page_language(sample, tmp_path):
+    out, _ = build(sample, tmp_path)
+    for lang, expected in (("pl", "Przełącz na jasny motyw"), ("en", "Switch to light theme")):
+        palette = config(out, lang, "courses")["theme"]["palette"]
+        assert [entry.get("scheme") for entry in palette] == [None, "default", "slate"]
+        assert palette[0]["toggle"]["name"] == expected
