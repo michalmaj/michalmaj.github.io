@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from conftest import error_codes, replace_in, warning_codes, write
 from teaching_hub.loader import load_site
 from teaching_hub.validate import validate
@@ -113,8 +115,54 @@ def test_task_id_is_unique_within_set(sample):
     assert "duplicate-task-id" in error_codes(run(sample))
 
 
-def test_local_filesystem_paths_are_rejected(sample):
-    replace_in(sample / ALPHA_PL, "Tekst zastępczy celu.", "Zobacz ../python/deep-learning/README.md")
+# ---------------------------------------------------------------- local paths: link targets only
+
+ALLOWED_IN_TEXT = """Uruchom serwer i otwórz http://localhost:8000 albo http://127.0.0.1:8000/docs.
+Projekt zapisz w /home/student/projekt (Linux), /Users/jan/projekt (macOS) lub C:\\Users\\jan\\projekt.
+Plik z ../python/deep-learning/README.md opisuje układ katalogów; zobacz też file:///tmp/notatki.txt.
+Polecenie `cd ~/projects && open http://localhost:8000` oraz kod:
+
+```bash
+cd /home/student/projekt
+python -m http.server 8000   # http://localhost:8000
+```
+"""
+
+
+def test_local_addresses_in_instruction_text_and_code_are_allowed(sample):
+    replace_in(sample / ALPHA_PL, "Tekst zastępczy celu.", ALLOWED_IN_TEXT)
+    assert "local-path" not in error_codes(run(sample))
+
+
+def test_link_targets_in_code_are_not_links(sample):
+    replace_in(sample / ALPHA_PL, "Tekst zastępczy celu.", "Składnia: `[opis](/home/student/plik.md)`.")
+    assert "local-path" not in error_codes(run(sample))
+
+
+@pytest.mark.parametrize(
+    "markdown",
+    [
+        "[README](../python/deep-learning/README.md)",
+        "[notatki](/Users/jan/notatki.md)",
+        "[plik](/home/student/plik.md)",
+        "[plik](file:///tmp/plik.txt)",
+        "[dysk](C:/Users/jan/plik.txt)",
+        "![schemat](../cpp/mechatronic-systems-programming/diagram.png)",
+        "[serwer](http://localhost:8000/)",
+        "[serwer](http://127.0.0.1:8000/docs)",
+        "Zobacz [notatki][n].\n\n[n]: /home/student/notatki.md",
+        '<a href="file:///tmp/plik.txt">plik</a>',
+        '<img src="/Users/jan/obraz.png" alt="obraz">',
+    ],
+)
+def test_local_link_targets_are_rejected(sample, markdown):
+    replace_in(sample / ALPHA_PL, "Tekst zastępczy celu.", markdown)
+    assert "local-path" in error_codes(run(sample))
+
+
+@pytest.mark.parametrize("path", ["../python/deep-learning/README.md", "/Users/jan/repo/README.md", "C:/repo/README.md"])
+def test_material_paths_must_stay_inside_the_repository(sample, path):
+    replace_in(sample / ALPHA_PL, "path: START-HERE.pl.md", f"path: {path}")
     assert "local-path" in error_codes(run(sample))
 
 
@@ -198,3 +246,8 @@ def test_published_url_cannot_disappear(sample):
     issues = run(sample)
     removed = [i for i in issues if i.code == "url-removed"]
     assert [i.path for i in removed] == ["/courses/sample-course-a/task-sets/gone/"]
+
+
+def test_external_material_must_not_point_to_a_local_service(sample):
+    replace_in(sample / ALPHA_PL, "url: https://git-scm.com/doc", "url: https://localhost:8443/docs")
+    assert "local-path" in error_codes(run(sample))

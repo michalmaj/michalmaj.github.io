@@ -81,3 +81,22 @@ def task_headings(lines: list[str], section: tuple[int, int]) -> list[TaskHeadin
         else:
             found.append(TaskHeading(i, line[4:].strip(), None))
     return found
+
+
+_INLINE_CODE_RE = re.compile(r"(`+)(.+?)\1", re.S)
+_LINK_RE = re.compile(r"!?\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+(?:\"[^\"]*\"|'[^']*'))?\s*\)")
+_REFERENCE_RE = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*<?(\S+?)>?(?:\s.*)?$", re.M)
+_AUTOLINK_RE = re.compile(r"<([a-zA-Z][a-zA-Z0-9+.-]*:[^>\s]+)>")
+_HTML_URL_RE = re.compile(r"\b(?:href|src)\s*=\s*[\"']([^\"']+)[\"']", re.I)
+
+
+def link_targets(body: str) -> list[str]:
+    """Targets of links and images (Markdown and raw HTML), ignoring code blocks and code spans."""
+    lines = body.splitlines()
+    mask = code_mask(lines)
+    text = "\n".join("" if in_code else line for line, in_code in zip(lines, mask))
+    text = _INLINE_CODE_RE.sub("", text)
+    targets: list[str] = []
+    for pattern in (_LINK_RE, _REFERENCE_RE, _AUTOLINK_RE, _HTML_URL_RE):
+        targets += pattern.findall(text)
+    return targets

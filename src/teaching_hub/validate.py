@@ -5,11 +5,29 @@ import re
 from .i18n import REQUIRED_KEYS
 from .issues import Issue, error, warning
 from .loader import Doc, Site
-from .mdtools import find_section, task_headings
+from .mdtools import find_section, link_targets, task_headings
 from .models import LANGS, RESERVED_COURSE_IDS, RESERVED_TOP_LEVEL, SLUG_RE, SPDX_ALLOWED, RepoMaterial
 from .urls import public_urls
 
-LOCAL_PATH_RE = re.compile(r"\.\./(python|cpp)/|/Users/|/home/[a-z]|file://|localhost|\b[A-Za-z]:\\")
+# Applied to link and image targets only, never to instruction text or code: a lab may well tell
+# students to open http://localhost:8000 or to work in /home/student, but the published site must not
+# link to files on the author's machine, to sibling repositories in the workspace, or to local services.
+LOCAL_TARGET_RE = re.compile(
+    r"^(?:file:|/Users/|/home/|[A-Za-z]:[\\/]|\\\\)"
+    r"|(?:^|/)\.\./(?:python|cpp)/"
+    r"|^[a-z][a-z0-9+.-]*://(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:/|$)",
+    re.I,
+)
+
+
+def _outside_repository(path: str) -> bool:
+    """A material path must be relative and stay inside its repository."""
+    return (
+        path.startswith(("/", "\\"))
+        or re.match(r"^[A-Za-z]:", path) is not None
+        or ".." in re.split(r"[\\/]", path)
+        or path.lower().startswith("file:")
+    )
 
 
 def validate(site: Site) -> list[Issue]:
@@ -98,14 +116,17 @@ def _check_docs(site: Site) -> list[Issue]:
             continue
         if doc.course_id is not None and doc.course_id not in site.courses:
             out.append(error("unknown-course", doc.rel, f"course {doc.course_id!r} is not in data/courses.yml"))
-        if LOCAL_PATH_RE.search(doc.body):
-            out.append(error("local-path", doc.rel, "content links to a local filesystem path"))
+        local = [target for target in link_targets(doc.body) if LOCAL_TARGET_RE.search(target)]
+        if local:
+            out.append(error("local-path", doc.rel, f"link to a local path or service: {local[0]}"))
         for material in _materials(doc):
             if isinstance(material, RepoMaterial):
                 if material.repository not in site.repositories:
                     out.append(error("unknown-repository", doc.rel, f"repository {material.repository!r} is not registered"))
-                if material.path and LOCAL_PATH_RE.search(material.path):
-                    out.append(error("local-path", doc.rel, f"material path {material.path!r}"))
+                if material.path and _outside_repository(material.path):
+                    out.append(error("local-path", doc.rel, f"material path {material.path!r} leaves the repository"))
+            elif LOCAL_TARGET_RE.search(material.url):
+                out.append(error("local-path", doc.rel, f"material URL {material.url!r} points to a local service"))
         if doc.kind in ("task_set", "guide"):
             key = (doc.kind, doc.lang, doc.course_id, doc.slug)
             if key in seen_slug:
