@@ -1,0 +1,25 @@
+# Renderer configuration shared by every build (mkdocs.yml format).
+# Read by Zensical and by MkDocs + Material. No hooks, no plugins.
+use_directory_urls: true
+theme:
+  name: material
+  font: false
+  features:
+    - search.highlight
+    - content.code.copy
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+  links:
+    not_found: warn
+    anchors: warn
+    # Links between builds (e.g. /licensing/) are verified by the pipeline.
+    absolute_links: ignore

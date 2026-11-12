@@ -1,0 +1,34 @@
+# Facts checked against each repository default branch on 2026-11-12.
+repositories:
+  - id: software-engineering-in-practice
+    name: Software Engineering in Practice
+    url: https://github.com/michalmaj/software-engineering-in-practice
+    default_branch: main
+    maturity: not_assessed
+    technologies: [Python, Go, Java]
+    content_languages: [en, pl]
+    licenses: {code: MIT, content: CC-BY-4.0}
+  - id: mechatronic-systems-programming
+    name: Programowanie systemów mechatronicznych
+    url: https://github.com/michalmaj/mechatronic-systems-programming
+    default_branch: main
+    maturity: not_assessed
+    technologies: [C++20, CMake, CTest]
+    content_languages: [pl, en]
+    licenses: {code: MIT, content: MIT}
+  - id: deep-learning
+    name: Deep Learning
+    url: https://github.com/michalmaj/deep-learning
+    default_branch: main
+    maturity: in_development
+    technologies: [Python, PyTorch, Jupyter]
+    content_languages: [pl, en]
+    licenses: {code: MIT, content: CC-BY-SA-4.0}
+  - id: python-dev-setup-for-beginners
+    name: Python Dev Setup for Beginners
+    url: https://github.com/michalmaj/python-dev-setup-for-beginners
+    default_branch: main
+    maturity: not_assessed
+    technologies: [Markdown]
+    content_languages: [en]
+    licenses: {code: MIT, content: CC-BY-SA-4.0}

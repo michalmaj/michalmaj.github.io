@@ -1,0 +1,29 @@
+[project]
+name = "teaching-hub"
+version = "0.0.0"
+description = "Content pipeline for the michalmaj.github.io site (renderer prototype)."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.14,<3",
+    "pyyaml>=6.0,<7",
+]
+
+[project.scripts]
+teaching-hub = "teaching_hub.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+zensical = ["zensical==0.1.1"]
+material = ["mkdocs==1.6.1", "mkdocs-material==9.8.1"]
+
+[tool.uv]
+default-groups = ["dev", "zensical", "material"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["renderer: runs a real renderer build (slower)"]
+
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"

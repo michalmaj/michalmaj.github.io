@@ -1,0 +1,4 @@
+# Pipeline settings shared by all builds.
+site_url: https://michalmaj.github.io/
+default_language: pl
+languages: [pl, en]

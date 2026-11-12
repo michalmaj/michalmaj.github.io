@@ -1,0 +1,19 @@
+# Test fixture: placeholder courses only. Not real course data.
+courses:
+  - id: sample-course-a
+    name:
+      pl: "Przedmiot przykładowy A"
+      en: "[EN placeholder] Sample course A"
+    summary:
+      pl: "Opis zastępczy przedmiotu A."
+    order: 1
+  - id: sample-course-b
+    name:
+      pl: "Przedmiot przykładowy B"
+    summary:
+      pl: "Opis zastępczy przedmiotu B."
+    order: 2
+  - id: sample-course-c
+    name:
+      pl: "Przedmiot przykładowy C"
+    order: 3
