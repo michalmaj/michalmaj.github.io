@@ -33,6 +33,48 @@ def test_build_reads_renderer_config_separately_from_the_content_source(tmp_path
     assert (site_dir / "courses/sample-course-a/task-sets/alpha/index.html").is_file()
 
 
+DRAFT_MARKER_PL = "Podgląd lokalny. Ta strona nie jest publikowana."  # draft_text in data/i18n/pl.yml
+
+
+def test_build_fails_when_a_draft_marker_reaches_the_artifact(sample, tmp_path):
+    guide = sample / "content/pl/courses/sample-course-a/guides/guidelines.md"
+    guide.write_text(guide.read_text(encoding="utf-8") + f"\n{DRAFT_MARKER_PL}\n", encoding="utf-8")
+    code = main(["build", "--source", str(sample), "--config-dir", str(sample / "renderer"),
+                 "--build-dir", str(tmp_path / "b"), "--site-dir", str(tmp_path / "_site")])
+    assert code == 1
+
+
+def test_check_command_uses_draft_markers_from_the_source(sample, tmp_path):
+    site_dir = tmp_path / "_site"
+    args = ["--source", str(sample), "--config-dir", str(sample / "renderer")]
+    assert main(["build", *args, "--build-dir", str(tmp_path / "b"), "--site-dir", str(site_dir)]) == 0
+    assert main(["check", "--site-dir", str(site_dir), *args]) == 0
+    page = site_dir / "courses/index.html"
+    page.write_text(page.read_text(encoding="utf-8") + DRAFT_MARKER_PL, encoding="utf-8")
+    assert main(["check", "--site-dir", str(site_dir), *args]) == 1
+
+
+def test_draft_preview_in_ci_fails_cleanly(sample, tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    drafts = tmp_path / "drafts"
+    drafts.mkdir()
+    code = main(["build", "--source", str(sample), "--config-dir", str(sample / "renderer"), "--drafts", str(drafts),
+                 "--build-dir", str(tmp_path / "b"), "--site-dir", str(tmp_path / "_site")])
+    assert code == 1
+    assert "refused in CI" in capsys.readouterr().out
+    assert not (tmp_path / "_site").exists()
+
+
+def test_check_reports_public_pages_missing_from_the_artifact(sample, tmp_path, capsys):
+    site_dir = tmp_path / "_site"
+    args = ["--source", str(sample), "--config-dir", str(sample / "renderer")]
+    assert main(["build", *args, "--build-dir", str(tmp_path / "b"), "--site-dir", str(site_dir)]) == 0
+    (site_dir / "en/courses/sample-course-a/task-sets/alpha/index.html").unlink()
+    assert main(["check", "--site-dir", str(site_dir), *args]) == 1
+    out = capsys.readouterr().out
+    assert "[missing-page] /en/courses/sample-course-a/task-sets/alpha/" in out
+
+
 def test_check_tracked_flags_private_files(tmp_path, capsys):
     listing = tmp_path / "tracked.txt"
     listing.write_text("README.md\nARCHITECTURE.md\n", encoding="utf-8")

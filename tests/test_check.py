@@ -101,6 +101,18 @@ def test_missing_root_404_page_is_reported(tmp_path):
     assert codes(check_artifact(site)) == ["missing-404"]
 
 
+def test_private_files_in_the_artifact_are_reported(tmp_path):
+    site = make_site(tmp_path, {
+        "index.html": "ok",
+        "ARCHITECTURE.md": "x",
+        "assets/notes.private.md": "x",
+        "courses/CLAUDE.md": "x",
+        "courses/drafts/pl/x.md": "x",
+    })
+    flagged = sorted(i.path for i in check_artifact(site) if i.code == "private-file-published")
+    assert flagged == ["ARCHITECTURE.md", "assets/notes.private.md", "courses/CLAUDE.md", "courses/drafts/pl/x.md"]
+
+
 def test_private_files_must_not_be_tracked():
     tracked = [
         "README.md",

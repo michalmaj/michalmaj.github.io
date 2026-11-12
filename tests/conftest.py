@@ -7,6 +7,13 @@ REPO = Path(__file__).resolve().parent.parent
 FIXTURE = REPO / "tests" / "fixtures" / "sample"
 
 
+@pytest.fixture(autouse=True)
+def _outside_ci(monkeypatch):
+    """Run every test as a local run; tests that need CI set the variables themselves."""
+    for name in ("CI", "GITHUB_ACTIONS"):
+        monkeypatch.delenv(name, raising=False)
+
+
 @pytest.fixture
 def sample(tmp_path: Path) -> Path:
     """A writable copy of the placeholder sample site with the real renderer config."""
