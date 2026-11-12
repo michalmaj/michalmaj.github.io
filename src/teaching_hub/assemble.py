@@ -6,11 +6,13 @@ Only published/archived material is written; drafts only in local preview.
 
 import copy
 import os
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
 
+from . import markup as m
 from .i18n import t
 from .loader import Doc, Site
 from .mdtools import find_section, task_headings
@@ -60,13 +62,18 @@ def _listed(doc: Doc, include_drafts: bool) -> bool:
     return doc.status == "published" or (include_drafts and doc.draft)
 
 
-def _lang_label(site: Site, lang: str, material_lang: str) -> str:
-    return t(site, lang, f"lang_{material_lang}")
+def _lang_badge(site: Site, lang: str, material_lang: str) -> str:
+    return m.lang_badge(t(site, lang, f"lang_{material_lang}"), t(site, lang, "material_language"))
+
+
+def _maturity_badge(site: Site, lang: str, repo) -> str | None:
+    key = f"maturity_{repo.maturity}"
+    return m.badge(m.esc(t(site, lang, key)), "status") if key in site.i18n[lang] else None
 
 
 def _material_line(site: Site, lang: str, material) -> str:
     if isinstance(material, ExternalMaterial):
-        return f"- [{material.label}]({material.url}) · {_lang_label(site, lang, material.lang)}"
+        return f"- [{material.label}]({material.url}) " + m.meta([_lang_badge(site, lang, material.lang)])
     repo = site.repositories[material.repository]
     ref = material.ref or repo.default_branch
     if material.path:
@@ -74,39 +81,37 @@ def _material_line(site: Site, lang: str, material) -> str:
         url = f"{repo.url}/{kind}/{ref}/{material.path.rstrip('/')}"
     else:
         url = repo.url if material.ref is None else f"{repo.url}/tree/{ref}"
-    parts = [f"[{material.label}]({url})", repo.name]
+    parts = [f'<span class="th-material__repo">{m.esc(repo.name)}</span>']
     if ref != repo.default_branch:
-        parts.append(f"{t(site, lang, 'ref')} `{ref}`")
-    maturity_key = f"maturity_{repo.maturity}"
-    if maturity_key in site.i18n[lang]:
-        parts.append(t(site, lang, maturity_key))
-    parts.append(_lang_label(site, lang, material.lang))
-    return "- " + " · ".join(parts)
+        parts.append(m.badge(f"{m.esc(t(site, lang, 'ref'))} `{ref}`", "ref"))
+    parts.append(_maturity_badge(site, lang, repo))
+    parts.append(_lang_badge(site, lang, material.lang))
+    return f"- [{material.label}]({url}) " + m.meta(parts)
 
 
-def _material_block(site: Site, lang: str, materials) -> list[str]:
-    return [_material_line(site, lang, m) for m in materials]
+def _material_block(site: Site, lang: str, materials, css_class: str = "th-materials", label: str | None = None) -> list[str]:
+    lines = [_material_line(site, lang, item) for item in materials]
+    if label:
+        lines = [f'<p class="th-label">{m.esc(label)}</p>', "", *lines]
+    return m.block(css_class, lines)
 
 
 def _switch(site: Site, lang: str, url: str | None, include_drafts: bool) -> str | None:
-    """Paragraph linking the other-language version (or the other home page)."""
+    """Link to the other-language version (or the other home page)."""
     other = _other(lang)
     if url is not None:
-        return f"[{t(site, lang, 'other_language')}]({url}){{ lang={other} }}"
+        return f"[{t(site, lang, 'other_language')}]({url}){{ lang={other} .th-lang-switch }}"
     if space_has_content(site, "home", other):
-        return f"[{t(site, lang, 'other_language_home')}]({space_root(other, '')}){{ lang={other} }}"
+        return f"[{t(site, lang, 'other_language_home')}]({space_root(other, '')}){{ lang={other} .th-lang-switch }}"
     return None
 
 
-def _after_h1(body: str, extra: list[str]) -> str:
-    lines = body.splitlines()
-    if lines and lines[0].startswith("# "):
-        return "\n".join([lines[0], "", *extra, *lines[1:]])
-    return "\n".join([*extra, *lines])
+def _crumbs(site: Site, lang: str, links: list[str]) -> str:
+    return m.breadcrumbs(t(site, lang, "breadcrumb"), links)
 
 
-def _front(search_exclude: bool) -> str:
-    return "---\nsearch:\n  exclude: true\n---\n\n" if search_exclude else ""
+def _front(search_exclude: bool, hide: tuple[str, ...] = ()) -> str:
+    return m.front_matter(search_exclude, hide)
 
 
 def _set_title(site: Site, lang: str, doc: Doc) -> str:
@@ -123,10 +128,9 @@ def _task_set_page(site: Site, doc: Doc, include_drafts: bool) -> str:
     twin = site.find("task_set", other, doc.course_id, doc.slug)
     twin_url = task_set_url(other, doc.course_id, doc.slug) if twin and _listed(twin, False) else None
 
-    header = [f"# {_set_title(site, lang, doc)}", ""]
-    crumbs = f"[{t(site, lang, 'nav_catalog')}](../../index.md) › [{course.name.get(lang)}](../index.md)"
+    crumbs = _crumbs(site, lang, [f"[{t(site, lang, 'nav_catalog')}](../../index.md)", f"[{course.name.get(lang)}](../index.md)"])
     switch = _switch(site, lang, twin_url, include_drafts)
-    header += [crumbs + (f" · {switch}" if switch else ""), ""]
+    header = [m.page_marker("task-set"), "", *m.pagebar(crumbs, switch), f"# {_set_title(site, lang, doc)}", ""]
     if doc.draft:
         header += [f'!!! danger "{t(site, lang, "draft_title")}"', f"    {t(site, lang, 'draft_text')}", ""]
     if meta.status == "archived":
@@ -142,7 +146,7 @@ def _task_set_page(site: Site, doc: Doc, include_drafts: bool) -> str:
         links = ", ".join(f"[{_set_title(site, lang, siblings[s])}]({s}.md)" for s in meta.requires)
         facts.append(f"{t(site, lang, 'requires')}: {links}")
     if facts:
-        header += [" · ".join(facts), ""]
+        header += [*m.paragraph(" · ".join(facts), "th-meta"), ""]
 
     lines = doc.body.splitlines()
     tasks_heading = t(site, lang, "section_tasks")
@@ -155,10 +159,13 @@ def _task_set_page(site: Site, doc: Doc, include_drafts: bool) -> str:
         task_meta = meta.tasks.get(task.id)
         title = f"{t(site, lang, 'task')} {number}. {task.title}"
         if task_meta and task_meta.optional:
-            title += f" ({t(site, lang, 'optional')})"
+            title += " " + m.optional_badge(t(site, lang, "optional"))
         replace[task.line] = f"### {title} {{#{task.id}}}"
         if task_meta and task_meta.materials:
-            insert_after[task.line] = ["", f"**{materials_heading}:**", "", *_material_block(site, lang, task_meta.materials)]
+            insert_after[task.line] = [
+                "",
+                *_material_block(site, lang, task_meta.materials, "th-materials th-materials--task", materials_heading),
+            ]
 
     if meta.materials:
         block = _material_block(site, lang, meta.materials)
@@ -182,9 +189,9 @@ def _guide_page(site: Site, doc: Doc, include_drafts: bool) -> str:
     other = _other(lang)
     twin = site.find("guide", other, doc.course_id, doc.slug)
     twin_url = doc_url(twin) if twin and _listed(twin, False) else None
-    crumbs = f"[{t(site, lang, 'nav_catalog')}](../../index.md) › [{course.name.get(lang)}](../index.md)"
+    crumbs = _crumbs(site, lang, [f"[{t(site, lang, 'nav_catalog')}](../../index.md)", f"[{course.name.get(lang)}](../index.md)"])
     switch = _switch(site, lang, twin_url, include_drafts)
-    out = [f"# {doc.meta.title}", "", crumbs + (f" · {switch}" if switch else ""), ""]
+    out = [m.page_marker("guide"), "", *m.pagebar(crumbs, switch), f"# {doc.meta.title}", ""]
     if doc.draft:
         out += [f'!!! danger "{t(site, lang, "draft_title")}"', f"    {t(site, lang, 'draft_text')}", ""]
     if doc.meta.status == "archived":
@@ -201,9 +208,9 @@ def _used_repositories(site: Site, docs: list[Doc]) -> list[str]:
         materials = list(doc.meta.materials)
         for task in getattr(doc.meta, "tasks", {}).values():
             materials += task.materials
-        for m in materials:
-            if isinstance(m, RepoMaterial) and m.repository not in seen:
-                seen.append(m.repository)
+        for item in materials:
+            if isinstance(item, RepoMaterial) and item.repository not in seen:
+                seen.append(item.repository)
     return seen
 
 
@@ -212,41 +219,52 @@ def _course_page(site: Site, lang: str, course_id: str, include_drafts: bool) ->
     other = _other(lang)
     twin_url = f"{lang_prefix(other)}/courses/{course_id}/" if course_id in visible_courses(site, other) else None
     switch = _switch(site, lang, twin_url, include_drafts)
-    out = [f"# {course.name.get(lang)}", "", f"[{t(site, lang, 'nav_catalog')}](../index.md)" + (f" · {switch}" if switch else ""), ""]
+    crumbs = _crumbs(site, lang, [f"[{t(site, lang, 'nav_catalog')}](../index.md)"])
+    out = [m.page_marker("course"), "", *m.pagebar(crumbs, switch), f"# {course.name.get(lang)}", ""]
     if course.summary.get(lang):
-        out += [course.summary.get(lang), ""]
+        out += [*m.paragraph(course.summary.get(lang), "th-lead"), ""]
     index = site.find("course_index", lang, course_id)
     if index is not None and index.body.strip():
         out += [index.body.strip(), ""]
 
     sets = sorted((d for d in site.by_kind("task_set", lang, course_id) if _listed(d, include_drafts)), key=lambda d: d.position)
     if sets:
-        out += [f"## {t(site, lang, 'task_sets')}", ""]
+        cards: list[str] = []
         for doc in sets:
-            facts = [doc.meta.summary] if doc.meta.summary else []
+            facts = []
             if doc.meta.estimated_duration_minutes:
                 facts.append(f"{doc.meta.estimated_duration_minutes} {t(site, lang, 'minutes')}")
             count = len(task_headings(doc.body.splitlines(), find_section(doc.body.splitlines(), t(site, lang, "section_tasks"))))
             facts.append(f"{t(site, lang, 'tasks_count')}: {count}")
-            out.append(f"- [{_set_title(site, lang, doc)}](task-sets/{doc.slug}.md) — " + " · ".join(facts))
-        out.append("")
+            card = [
+                f'<p class="th-eyebrow">{m.esc(t(site, lang, "task_set"))} {doc.position}</p>',
+                "",
+                f"### [{doc.meta.title}](task-sets/{doc.slug}.md)",
+                "",
+            ]
+            if doc.meta.summary:
+                card += [doc.meta.summary, ""]
+            card.append(f'<p class="th-card__meta">{m.esc(" · ".join(facts))}</p>')
+            cards += [*m.block("th-card th-card--set", card), ""]
+        out += [f"## {t(site, lang, 'task_sets')}", "", *m.block("th-cards th-cards--sets", cards), ""]
     guides = sorted((d for d in site.by_kind("guide", lang, course_id) if _listed(d, include_drafts)), key=lambda d: (d.meta.order is None, d.meta.order or 0, d.slug))
     if guides:
-        out += [f"## {t(site, lang, 'guides')}", ""]
-        out += [f"- [{d.meta.title}](guides/{d.slug}.md)" + (f" — {d.meta.summary}" if d.meta.summary else "") for d in guides]
-        out.append("")
+        cards = []
+        for d in guides:
+            card = [f"### [{d.meta.title}](guides/{d.slug}.md)", ""]
+            if d.meta.summary:
+                card.append(d.meta.summary)
+            cards += [*m.block("th-card th-card--guide", card), ""]
+        out += [f"## {t(site, lang, 'guides')}", "", *m.block("th-cards th-cards--guides", cards), ""]
     repos = _used_repositories(site, sets + guides)
     if repos:
-        out += [f"## {t(site, lang, 'used_materials')}", ""]
+        lines = []
         for repo_id in repos:
             repo = site.repositories[repo_id]
-            parts = [f"[{repo.name}]({repo.url})"]
-            if repo.content_languages:
-                parts.append(", ".join(t(site, lang, f"lang_{code}") for code in repo.content_languages))
-            if f"maturity_{repo.maturity}" in site.i18n[lang]:
-                parts.append(t(site, lang, f"maturity_{repo.maturity}"))
-            out.append("- " + " · ".join(parts))
-        out.append("")
+            parts = [_lang_badge(site, lang, code) for code in repo.content_languages]
+            parts.append(_maturity_badge(site, lang, repo))
+            lines.append(f"- [{repo.name}]({repo.url}) " + m.meta(parts))
+        out += [f"## {t(site, lang, 'used_materials')}", "", *m.block("th-repos", lines), ""]
     return "\n".join(out).rstrip() + "\n"
 
 
@@ -254,19 +272,21 @@ def _catalog_page(site: Site, lang: str, include_drafts: bool) -> str:
     other = _other(lang)
     twin_url = space_root(other, "courses") if space_has_content(site, "courses", other) else None
     switch = _switch(site, lang, twin_url, include_drafts)
-    out = [f"# {t(site, lang, 'nav_catalog')}", ""]
-    if switch:
-        out += [switch, ""]
+    out = [m.page_marker("catalog"), "", *m.pagebar(None, switch), f"# {t(site, lang, 'nav_catalog')}", ""]
     index = site.find("catalog_index", lang)
     if index is not None and index.body.strip():
         out += [index.body.strip(), ""]
+    cards: list[str] = []
     for course_id in visible_courses(site, lang, include_drafts):
         course = site.courses[course_id]
         count = sum(1 for d in site.by_kind("task_set", lang, course_id) if _listed(d, include_drafts))
-        facts = [course.summary.get(lang)] if course.summary.get(lang) else []
-        facts.append(f"{t(site, lang, 'course_sets_count')}: {count}")
-        out.append(f"- [{course.name.get(lang)}]({course_id}/index.md) — " + " · ".join(facts))
-    return "\n".join(out).rstrip() + "\n"
+        card = [f"## [{course.name.get(lang)}]({course_id}/index.md)", ""]
+        if course.summary.get(lang):
+            card += [course.summary.get(lang), ""]
+        card.append(f'<p class="th-card__meta">{m.esc(t(site, lang, "course_sets_count"))}: {count}</p>')
+        cards += [*m.block("th-card", card), ""]
+    out += m.block("th-cards", cards)
+    return _front(False, hide=("toc",)) + "\n".join(out).rstrip() + "\n"
 
 
 def _home_page(site: Site, lang: str, include_drafts: bool) -> str:
@@ -274,16 +294,19 @@ def _home_page(site: Site, lang: str, include_drafts: bool) -> str:
     other = _other(lang)
     twin_url = space_root(other, "") if space_has_content(site, "home", other) else None
     switch = _switch(site, lang, twin_url, include_drafts)
-    spaces = []
+    out = [m.page_marker("home"), "", *m.pagebar(None, switch), doc.body.strip(), ""]
+    cards: list[str] = []
     if space_has_content(site, "courses", lang, include_drafts):
-        spaces.append(f"- [{t(site, lang, 'space_courses')}]({space_root(lang, 'courses')})")
-    body = _after_h1(doc.body.strip(), [switch, ""] if switch else [])
-    return body.rstrip() + "\n\n" + "\n".join(spaces) + "\n"
+        card = [f"## [{t(site, lang, 'space_courses')}]({space_root(lang, 'courses')})", "", t(site, lang, "space_courses_description")]
+        cards += [*m.block("th-card th-card--space", card), ""]
+    if cards:
+        out += m.block("th-cards th-cards--spaces", cards)
+    return _front(False, hide=("navigation", "toc")) + "\n".join(out).rstrip() + "\n"
 
 
 def _licensing_page(site: Site, lang: str) -> str:
     doc = site.find("licensing", lang)
-    out = [doc.body.strip(), "", f"## {t(site, lang, 'licensing_third_party')}", ""]
+    out = [m.page_marker("licensing"), "", doc.body.strip(), "", f"## {t(site, lang, 'licensing_third_party')}", ""]
     if site.third_party:
         for item in site.third_party:
             out.append(f"- {item.title} — {item.author} · [{item.source_url}]({item.source_url}) · {item.license}")
@@ -311,9 +334,41 @@ def _write(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def _config(site: Site, lang: str, space: str, nav: list, not_in_nav: list[str]) -> dict:
+THEME_CSS = ("tokens.css", "theme.css")
+THEME_URL = "stylesheets/teaching-hub"
+
+
+def _copy_theme(site: Site, space: str, docs: Path) -> list[str]:
+    """Copy the shared stylesheets (and an optional space-specific one) into a build; return extra CSS."""
+    source = site.config_dir / "theme"
+    names = [*THEME_CSS]
+    if (source / f"space-{space}.css").is_file():
+        names.append(f"space-{space}.css")
+    target = docs / THEME_URL
+    target.mkdir(parents=True, exist_ok=True)
+    for name in names:
+        if (source / name).is_file():
+            shutil.copyfile(source / name, target / name)
+    return [f"{THEME_URL}/{name}" for name in names[len(THEME_CSS):]]
+
+
+def _palette(site: Site, lang: str) -> list[dict]:
+    """Native colour scheme toggle: system → light → dark → system."""
+    custom = {"primary": "custom", "accent": "custom"}
+    return [
+        {"media": "(prefers-color-scheme)", **custom,
+         "toggle": {"icon": "material/brightness-auto", "name": t(site, lang, "theme_to_light")}},
+        {"media": "(prefers-color-scheme: light)", "scheme": "default", **custom,
+         "toggle": {"icon": "material/brightness-7", "name": t(site, lang, "theme_to_dark")}},
+        {"media": "(prefers-color-scheme: dark)", "scheme": "slate", **custom,
+         "toggle": {"icon": "material/brightness-4", "name": t(site, lang, "theme_to_auto")}},
+    ]
+
+
+def _config(site: Site, lang: str, space: str, nav: list, not_in_nav: list[str], extra_css: list[str] = ()) -> dict:
     base = yaml.safe_load((site.config_dir / "base.yml").read_text(encoding="utf-8")) or {}
     cfg = copy.deepcopy(base)
+    cfg["extra_css"] = [*cfg.get("extra_css", []), *extra_css]
     space_cfg = site.spaces[space]
     licensing_lang = lang if site.find("licensing", lang) and space_has_content(site, "home", lang) else "pl"
     licensing_url = f"{lang_prefix(licensing_lang)}/licensing/"
@@ -325,6 +380,7 @@ def _config(site: Site, lang: str, space: str, nav: list, not_in_nav: list[str])
         nav=nav,
     )
     cfg.setdefault("theme", {})["language"] = lang
+    cfg["theme"]["palette"] = _palette(site, lang)
     if space_cfg.footer_key:
         cfg["copyright"] = t(site, lang, space_cfg.footer_key).format(licensing_url=licensing_url)
     if not_in_nav:
@@ -391,7 +447,8 @@ def assemble(site: Site, out_dir: Path, include_drafts: bool = False) -> list[Bu
                 nav, hidden = _home_build(site, lang, root, include_drafts), []
             else:
                 nav, hidden = _courses_build(site, lang, root, include_drafts)
-            cfg = _config(site, lang, space, nav, hidden)
+            extra_css = _copy_theme(site, space, root / "docs")
+            cfg = _config(site, lang, space, nav, hidden, extra_css)
             _write(root / "mkdocs.yml", yaml.safe_dump(cfg, allow_unicode=True, sort_keys=False))
             builds.append(Build(lang, space, space_root(lang, site.spaces[space].path), root))
     return builds

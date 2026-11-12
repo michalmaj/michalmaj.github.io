@@ -1,0 +1,102 @@
+/*
+ * Teaching Hub — design tokens (Visual Design System v1)
+ *
+ * Every colour is a role, not a hue. Components use only these tokens.
+ * Both colour schemes define the same set; contrast pairs are checked by tests/test_theme.py
+ * (WCAG 2.2 AA: 4.5:1 for text, 3:1 for component boundaries and focus).
+ *
+ * Space accents: a space may override the accent group (--th-accent*) in
+ * renderer/theme/space-<space>.css, which is linked only in that space's builds.
+ */
+
+:root {
+  /* Typography: system and locally installed fonts only. */
+  --th-font-text: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --th-font-display: "Iowan Old Style", "Charter", "Palatino Linotype", Palatino, Georgia, "Noto Serif", serif;
+  --th-font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Shape and rhythm */
+  --th-radius: 12px;
+  --th-radius-sm: 6px;
+  --th-radius-pill: 999px;
+  --th-measure: 44rem;
+  --th-transition: 120ms ease;
+}
+
+/* Light scheme */
+[data-md-color-scheme="default"] {
+  --th-bg: #f7f6f3;
+  --th-surface: #ffffff;
+  --th-surface-sunken: #efede8;
+  --th-border: #e3e0d9;
+  --th-border-strong: #8c887e;
+
+  --th-text: #1a1c1f;
+  --th-text-muted: #565a61;
+
+  --th-accent: #0b6b75;
+  --th-accent-strong: #07535b;
+  --th-on-accent: #ffffff;
+  --th-accent-soft: #e2efef;
+  --th-accent-on-soft: #085a62;
+  --th-focus: #0b6b75;
+
+  --th-badge-bg: #efede8;
+  --th-badge-fg: #3a3e44;
+  --th-optional-bg: #eceef3;
+  --th-optional-fg: #3b4454;
+  --th-archived-bg: #fbf1dc;
+  --th-archived-fg: #6f4500;
+  --th-draft-bg: #fbe6e3;
+  --th-draft-fg: #8a1f16;
+
+  --th-code-bg: #f1efea;
+  --th-code-fg: #1f2328;
+  --th-code-comment: #62666c;
+  --th-code-keyword: #8a2b6b;
+  --th-code-string: #2c6a28;
+  --th-code-number: #8f4800;
+  --th-code-function: #0b5c86;
+  --th-code-operator: #4a4f56;
+
+  --th-shadow: 0 1px 2px #1a1c1f0f, 0 4px 14px #1a1c1f0a;
+}
+
+/* Dark scheme */
+[data-md-color-scheme="slate"] {
+  --th-bg: #0e1318;
+  --th-surface: #151c24;
+  --th-surface-sunken: #11171e;
+  --th-border: #242e3a;
+  --th-border-strong: #6a7787;
+
+  --th-text: #e6eaee;
+  --th-text-muted: #a7b1bc;
+
+  --th-accent: #5cc3cd;
+  --th-accent-strong: #8ad6dd;
+  --th-on-accent: #05252a;
+  --th-accent-soft: #10343a;
+  --th-accent-on-soft: #93dfe5;
+  --th-focus: #5cc3cd;
+
+  --th-badge-bg: #1c252f;
+  --th-badge-fg: #c9d1da;
+  --th-optional-bg: #1e2531;
+  --th-optional-fg: #c3cbd7;
+  --th-archived-bg: #2d2410;
+  --th-archived-fg: #f0c878;
+  --th-draft-bg: #36191a;
+  --th-draft-fg: #f4aaa1;
+
+  --th-code-bg: #111820;
+  --th-code-fg: #dfe5eb;
+  --th-code-comment: #8e99a6;
+  --th-code-keyword: #e39bd3;
+  --th-code-string: #9bd18b;
+  --th-code-number: #efb26a;
+  --th-code-function: #7cc5ef;
+  --th-code-operator: #b7c0ca;
+
+  --th-shadow: 0 1px 2px #00000040, 0 6px 18px #00000033;
+}
