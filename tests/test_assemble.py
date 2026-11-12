@@ -182,7 +182,8 @@ def test_drafts_are_absent_unless_previewed(sample, tmp_path):
     assert '!!! danger "SZKIC"' in draft_page
 
 
-def test_preview_is_refused_in_ci(sample, tmp_path, monkeypatch):
-    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+@pytest.mark.parametrize("variable", ["CI", "GITHUB_ACTIONS"])
+def test_preview_is_refused_in_ci(sample, tmp_path, monkeypatch, variable):
+    monkeypatch.setenv(variable, "true")
     with pytest.raises(PreviewNotAllowed):
         build(sample, tmp_path, include_drafts=True)
