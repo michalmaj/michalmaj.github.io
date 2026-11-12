@@ -157,6 +157,15 @@ def _is_private_artifact_path(rel: str) -> bool:
     return parts[-1] in _PRIVATE_NAMES or parts[-1].endswith(".private.md") or bool(_PRIVATE_DIRS & set(parts[:-1]))
 
 
+def check_pages_present(site_dir: Path, urls) -> list[Issue]:
+    """Every public URL of the source must exist in the composed artifact."""
+    return [
+        error("missing-page", url, "public page is missing from the artifact")
+        for url in urls
+        if _target_file(Path(site_dir), url) is None
+    ]
+
+
 def draft_markers(site) -> list[str]:
     """Texts of the draft banner; they may appear only in a local draft preview."""
     return [text for text in (site.i18n.get(lang, {}).get("draft_text") for lang in ("pl", "en")) if text]
