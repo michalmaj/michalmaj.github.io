@@ -1,3 +1,25 @@
 
 # Private documentation
 /ARCHITECTURE.md
+
+# Private material (kept outside the public repository)
+drafts/
+CLAUDE.md
+AGENTS.md
+.claude/
+.superpowers/
+*.private.md
+
+# Generated output
+build/
+_site/
+_site-*/
+_preview/
+
+# Python tooling
+.venv/
+__pycache__/
+.pytest_cache/
+
+# OS files
+.DS_Store
