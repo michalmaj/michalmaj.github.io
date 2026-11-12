@@ -178,3 +178,38 @@ def check_tracked_paths(paths) -> list[Issue]:
         for p in paths
         if any(fnmatch.fnmatch(p, pattern) for pattern in PRIVATE_PATTERNS)
     ]
+
+
+
+class _Canonical(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.urls: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "link" and (a.get("rel") or "").lower() == "canonical" and a.get("href"):
+            self.urls.append(a["href"])
+
+
+_LOC_RE = re.compile(r"<loc>\s*([^<\s]+)\s*</loc>")
+
+
+def check_site_urls(site_dir: Path, site_url: str) -> list[Issue]:
+    """Canonical links and sitemap entries must point to the production domain."""
+    site_dir = Path(site_dir)
+    issues: list[Issue] = []
+    for path in sorted(site_dir.rglob("*")):
+        if path.suffix == ".html":
+            parser = _Canonical()
+            parser.feed(path.read_text(encoding="utf-8", errors="replace"))
+            urls = parser.urls
+        elif path.name == "sitemap.xml":
+            urls = _LOC_RE.findall(path.read_text(encoding="utf-8", errors="replace"))
+        else:
+            continue
+        wrong = [u for u in urls if not u.startswith(site_url)]
+        if wrong:
+            rel = path.relative_to(site_dir).as_posix()
+            issues.append(error("wrong-site-url", rel, f"{len(wrong)} URL(s) outside {site_url}, e.g. {wrong[0]}"))
+    return issues
