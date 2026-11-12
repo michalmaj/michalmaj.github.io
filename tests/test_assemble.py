@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from conftest import write
+from conftest import replace_in, write
 from teaching_hub.assemble import PreviewNotAllowed, assemble
 from teaching_hub.loader import load_site
 
@@ -268,3 +268,25 @@ def test_colour_scheme_toggle_is_labelled_in_the_page_language(sample, tmp_path)
         palette = config(out, lang, "courses")["theme"]["palette"]
         assert [entry.get("scheme") for entry in palette] == [None, "default", "slate"]
         assert palette[0]["toggle"]["name"] == expected
+
+
+# ---------------------------------------------------------------- course visibility: name + description + published material
+
+
+def test_course_with_a_description_but_no_published_material_is_not_published(sample, tmp_path):
+    out, _ = build(sample, tmp_path)
+    assert "sample-course-d" not in page(out, "pl", "courses", "index.md")
+    assert not (out / "pl/courses/docs/sample-course-d").exists()
+
+
+def test_a_published_guide_is_enough_material(sample, tmp_path):
+    out, _ = build(sample, tmp_path)
+    assert "sample-course-b/index.md" in page(out, "pl", "courses", "index.md")
+    assert (out / "pl/courses/docs/sample-course-b/guides/overview.md").is_file()
+
+
+def test_course_needs_a_description_in_each_language(sample, tmp_path):
+    replace_in(sample / "data/courses.yml", '      en: "Placeholder description of course A."\n', "")
+    out, builds = build(sample, tmp_path)
+    assert ("en", "courses") not in builds  # no English course is complete any more
+    assert "/en/courses/" not in page(out, "en", "home", "index.md")

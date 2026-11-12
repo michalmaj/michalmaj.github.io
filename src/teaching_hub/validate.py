@@ -7,7 +7,7 @@ from .issues import Issue, error, warning
 from .loader import Doc, Site
 from .mdtools import find_section, task_headings
 from .models import LANGS, RESERVED_COURSE_IDS, RESERVED_TOP_LEVEL, SLUG_RE, SPDX_ALLOWED, RepoMaterial
-from .urls import public_urls
+from .urls import has_description, public_urls
 
 LOCAL_PATH_RE = re.compile(r"\.\./(python|cpp)/|/Users/|/home/[a-z]|file://|localhost|\b[A-Za-z]:\\")
 
@@ -21,6 +21,7 @@ def validate(site: Site) -> list[Issue]:
     issues += _check_docs(site)
     issues += _check_translations(site)
     issues += _check_url_registry(site)
+    issues += _check_course_visibility(site)
     return issues
 
 
@@ -183,3 +184,23 @@ def _check_url_registry(site: Site) -> list[Issue]:
         for url in site.url_registry
         if url not in current
     ]
+
+
+def _check_course_visibility(site: Site) -> list[Issue]:
+    """Published material of a course that cannot be shown in its language would silently disappear."""
+    out = []
+    for lang in LANGS:
+        for course in site.courses.values():
+            published = sorted(
+                (d for kind in ("task_set", "guide") for d in site.by_kind(kind, lang, course.id) if d.status == "published"),
+                key=lambda d: d.rel,
+            )
+            if not published:
+                continue
+            missing = [label for label, ok in (("name", course.name.get(lang)), ("description", has_description(site, course, lang))) if not ok]
+            if missing:
+                out.append(error(
+                    "course-not-visible", published[0].rel,
+                    f"course {course.id!r} has published material in {lang!r} but no {' or '.join(missing)} there, so nothing would be published",
+                ))
+    return out
