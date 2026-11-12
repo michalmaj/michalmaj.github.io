@@ -1,0 +1,4 @@
+enabled: true
+path: courses
+site_name_key: site_name_courses
+footer_key: footer_courses
