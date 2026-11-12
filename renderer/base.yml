@@ -16,6 +16,9 @@ extra_css:
   - stylesheets/teaching-hub/theme.css
 extra:
   generator: false
+  # One storage scope for every build (/, /courses/, /en/, …), so a colour scheme chosen
+  # with the toggle applies across all spaces and languages, not only within one build.
+  scope: /
 markdown_extensions:
   - admonition
   - attr_list

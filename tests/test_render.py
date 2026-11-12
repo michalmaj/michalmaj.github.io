@@ -86,3 +86,18 @@ def test_broken_internal_link_fails_the_build(sample, tmp_path):
     page.write_text(page.read_text(encoding="utf-8") + "\n[x](../task-sets/ghost.md)\n", encoding="utf-8")
     with pytest.raises(RenderError):
         build_site(load_site(sample), tmp_path / "build", tmp_path / "_site", renderer="zensical")
+
+
+@pytest.mark.parametrize("renderer", RENDERERS)
+def test_colour_scheme_preference_is_stored_in_one_scope_for_all_builds(sample, tmp_path, renderer):
+    # The theme stores the visitor's colour scheme under a key prefixed with its storage scope.
+    # One scope for every build (/, /courses/, /en/, /en/courses/) means one shared preference.
+    site_dir = tmp_path / "_site"
+    build_site(load_site(sample), tmp_path / "build", site_dir, renderer=renderer)
+    scopes = {}
+    for prefix in ("", "courses/", "en/", "en/courses/"):
+        html = (site_dir / prefix / "index.html").read_text(encoding="utf-8")
+        match = re.search(r'__md_scope=new URL\("([^"]*)"', html)
+        assert match, f"no storage scope in /{prefix}"
+        scopes[f"/{prefix}"] = match.group(1)
+    assert scopes == {"/": "/", "/courses/": "/", "/en/": "/", "/en/courses/": "/"}
