@@ -6,9 +6,10 @@ import sys
 from pathlib import Path
 
 from .assemble import PreviewNotAllowed
-from .check import check_artifact, check_pages_present, check_tracked_paths, draft_markers
+from .check import check_artifact, check_pages_present, check_site_urls, check_tracked_paths, draft_markers
 from .loader import load_site
 from .materials import GitResolver, check_materials
+from .production import FIXTURE_MARKERS, is_test_fixture, production_status
 from .render import RenderError, build_site
 from .urls import public_urls
 from .validate import validate
@@ -27,7 +28,19 @@ def _cmd_validate(args) -> int:
     return _report(validate(load_site(Path(args.source), drafts=args.drafts, config_dir=Path(args.config_dir))))
 
 
+def _production_checks(site, site_dir: Path) -> tuple[list[str], list]:
+    """Extra forbidden strings and issues for a production artifact."""
+    return list(FIXTURE_MARKERS), check_site_urls(site_dir, site.settings["site_url"])
+
+
 def _cmd_build(args) -> int:
+    if args.production:
+        if is_test_fixture(Path(args.source)):
+            print(f"refused: a production build cannot use the test fixture ({args.source})")
+            return 1
+        if args.drafts is not None:
+            print("refused: a production build never includes drafts")
+            return 1
     site = load_site(Path(args.source), drafts=args.drafts, config_dir=Path(args.config_dir))
     issues = validate(site)
     if _report(issues):
@@ -42,18 +55,39 @@ def _cmd_build(args) -> int:
     # Outside a draft preview, the draft banner must never reach the artifact.
     forbidden = [] if args.drafts is not None else draft_markers(site)
     site_dir = Path(args.site_dir)
-    return _report(check_artifact(site_dir, forbidden=forbidden) + check_pages_present(site_dir, public_urls(site)))
+    issues = check_pages_present(site_dir, public_urls(site))
+    if args.production:
+        extra, url_issues = _production_checks(site, site_dir)
+        forbidden += extra
+        issues += url_issues
+    return _report(check_artifact(site_dir, forbidden=forbidden) + issues)
 
 
 def _cmd_check(args) -> int:
     forbidden = [line.strip() for line in Path(args.forbid).read_text(encoding="utf-8").splitlines() if line.strip()] if args.forbid else []
     site_dir = Path(args.site_dir)
     issues = []
+    if args.production and args.source is None:
+        print("refused: --production needs --source (site URL and draft markers come from the source)")
+        return 1
     if args.source is not None:
         site = load_site(Path(args.source), config_dir=Path(args.config_dir))
         forbidden += draft_markers(site)
         issues += check_pages_present(site_dir, public_urls(site))
+        if args.production:
+            extra, url_issues = _production_checks(site, site_dir)
+            forbidden += extra
+            issues += url_issues
     return _report(check_artifact(site_dir, forbidden=forbidden) + issues)
+
+
+def _cmd_production_status(args) -> int:
+    ready, reason = production_status(Path(args.source))
+    print(("ready: " if ready else "not ready: ") + reason)
+    if args.github_output:
+        with open(args.github_output, "a", encoding="utf-8") as out:
+            out.write(f"ready={'true' if ready else 'false'}\n")
+    return 0
 
 
 def _cmd_check_tracked(args) -> int:
@@ -97,6 +131,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--build-dir", default="build")
     p.add_argument("--site-dir", default="_site")
     p.add_argument("--drafts", type=Path, help="include private drafts (local preview only; refused in CI)")
+    p.add_argument("--production", action="store_true",
+                   help="publishable build: refuses the test fixture and drafts; adds production artifact checks")
     p.set_defaults(func=_cmd_build)
 
     p = sub.add_parser("check", help="check a composed artifact")
@@ -104,7 +140,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--forbid", help="file with strings that must not appear in the artifact")
     p.add_argument("--source", help="site source; its draft banner texts must not appear in the artifact")
     p.add_argument("--config-dir", default="renderer", help="renderer configuration (default: ./renderer)")
+    p.add_argument("--production", action="store_true", help="also apply the production artifact checks")
     p.set_defaults(func=_cmd_check)
+
+    p = sub.add_parser("production-status", help="report whether approved production content exists (launch gate)")
+    p.add_argument("--source", default=".")
+    p.add_argument("--github-output", help="append ready=true|false to this file (GitHub Actions step output)")
+    p.set_defaults(func=_cmd_production_status)
 
     p = sub.add_parser("check-tracked", help="fail if private files are tracked by Git")
     p.add_argument("--from-file", help="read the path list from a file instead of git ls-files")

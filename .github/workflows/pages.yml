@@ -1,0 +1,114 @@
+name: Pages
+
+# Publishes the production site (content/ and data/ of this repository) to GitHub Pages.
+# Never runs for pull requests. Deploys only from main, only when approved production content exists,
+# and only after tests, validation, both builds and the artifact checks have passed.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  refuse-other-refs:
+    name: Refuse non-main ref
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Stop
+        run: |
+          echo "::error title=Not deployed::This workflow publishes only from main; it was started for ${GITHUB_REF}."
+          exit 1
+
+  build:
+    name: Build production site
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pages: read
+    outputs:
+      ready: ${{ steps.status.outputs.ready }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Check that private files are not tracked
+        run: uv run teaching-hub check-tracked
+
+      - name: Check for approved production content
+        id: status
+        run: |
+          uv run teaching-hub production-status --source . --github-output "$GITHUB_OUTPUT" | tee status.txt
+          {
+            echo "### Production content"
+            echo
+            cat status.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report skipped deployment
+        if: steps.status.outputs.ready != 'true'
+        run: echo "::notice title=Deployment skipped::No approved production content yet (content/pl/home/index.md is missing). Nothing was built or deployed."
+
+      - name: Validate production content
+        if: steps.status.outputs.ready == 'true'
+        run: uv run teaching-hub validate --source .
+
+      - name: Build production site with Zensical
+        if: steps.status.outputs.ready == 'true'
+        run: uv run teaching-hub build --production --source . --renderer zensical --build-dir build/zensical --site-dir _site
+
+      - name: Control build with MkDocs Material
+        if: steps.status.outputs.ready == 'true'
+        run: uv run teaching-hub build --production --source . --renderer material --build-dir build/material --site-dir _site-material
+
+      - name: Check production artifact
+        if: steps.status.outputs.ready == 'true'
+        run: uv run teaching-hub check --production --site-dir _site --source .
+
+      - name: Configure GitHub Pages
+        if: steps.status.outputs.ready == 'true'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload Pages artifact
+        if: steps.status.outputs.ready == 'true'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site/
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.ref == 'refs/heads/main' && needs.build.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
