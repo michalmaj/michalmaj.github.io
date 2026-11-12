@@ -120,6 +120,8 @@ def check_artifact(site_dir: Path, forbidden=(), disabled_spaces=("for-employers
 
     for path in sorted(p for p in site_dir.rglob("*") if p.is_file()):
         rel = path.relative_to(site_dir).as_posix()
+        if _is_private_artifact_path(rel):
+            issues.append(error("private-file-published", rel, "private material must never be part of the published site"))
         if path.suffix == ".css" and _CSS_REMOTE_RE.search(path.read_text(encoding="utf-8", errors="replace")):
             issues.append(error("external-request", rel, "stylesheet imports a remote resource"))
         if forbidden and path.suffix in _TEXT_SUFFIXES:
@@ -144,6 +146,20 @@ def _normalize(path: PurePosixPath, keep_slash: bool) -> str:
         parts.append(part)
     out = "/" + "/".join(parts)
     return out + "/" if keep_slash and out != "/" else out
+
+
+_PRIVATE_NAMES = {"ARCHITECTURE.md", "CLAUDE.md", "AGENTS.md"}
+_PRIVATE_DIRS = {"drafts", ".claude", ".superpowers"}
+
+
+def _is_private_artifact_path(rel: str) -> bool:
+    parts = rel.split("/")
+    return parts[-1] in _PRIVATE_NAMES or parts[-1].endswith(".private.md") or bool(_PRIVATE_DIRS & set(parts[:-1]))
+
+
+def draft_markers(site) -> list[str]:
+    """Texts of the draft banner; they may appear only in a local draft preview."""
+    return [text for text in (site.i18n.get(lang, {}).get("draft_text") for lang in ("pl", "en")) if text]
 
 
 def check_tracked_paths(paths) -> list[Issue]:

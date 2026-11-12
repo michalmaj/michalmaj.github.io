@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .check import check_artifact, check_tracked_paths
+from .check import check_artifact, check_tracked_paths, draft_markers
 from .loader import load_site
 from .materials import GitResolver, check_materials
 from .render import RenderError, build_site
@@ -38,11 +38,15 @@ def _cmd_build(args) -> int:
         return 1
     for r in results:
         print(f"built {r.build.prefix:<14} with {args.renderer} in {r.seconds:.2f}s")
-    return _report(check_artifact(Path(args.site_dir)))
+    # Outside a draft preview, the draft banner must never reach the artifact.
+    forbidden = [] if args.drafts is not None else draft_markers(site)
+    return _report(check_artifact(Path(args.site_dir), forbidden=forbidden))
 
 
 def _cmd_check(args) -> int:
     forbidden = [line.strip() for line in Path(args.forbid).read_text(encoding="utf-8").splitlines() if line.strip()] if args.forbid else []
+    if args.source is not None:
+        forbidden += draft_markers(load_site(Path(args.source), config_dir=Path(args.config_dir)))
     return _report(check_artifact(Path(args.site_dir), forbidden=forbidden))
 
 
@@ -92,6 +96,8 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("check", help="check a composed artifact")
     p.add_argument("--site-dir", default="_site")
     p.add_argument("--forbid", help="file with strings that must not appear in the artifact")
+    p.add_argument("--source", help="site source; its draft banner texts must not appear in the artifact")
+    p.add_argument("--config-dir", default="renderer", help="renderer configuration (default: ./renderer)")
     p.set_defaults(func=_cmd_check)
 
     p = sub.add_parser("check-tracked", help="fail if private files are tracked by Git")
