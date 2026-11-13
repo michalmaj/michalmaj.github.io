@@ -1,0 +1,5 @@
+/
+/licensing/
+/courses/
+/courses/software-engineering/
+/courses/software-engineering/task-sets/i-am-a-developer/
