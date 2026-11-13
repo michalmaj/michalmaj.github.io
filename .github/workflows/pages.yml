@@ -12,6 +12,11 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    # Explicit bash adds pipefail: a failing check piped into tee must fail its step.
+    shell: bash
+
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -68,7 +73,7 @@ jobs:
 
       - name: Report skipped deployment
         if: steps.status.outputs.ready != 'true'
-        run: echo "::notice title=Deployment skipped::No approved production content yet (content/pl/home/index.md is missing). Nothing was built or deployed."
+        run: echo "::notice title=Deployment skipped::$(head -n 1 status.txt) Nothing was built or deployed."
 
       - name: Validate production content
         if: steps.status.outputs.ready == 'true'

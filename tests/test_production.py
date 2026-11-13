@@ -23,16 +23,60 @@ def repo_without_content(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------- launch gate
 
 
+HOME = "content/pl/home/index.md"
+REGISTRY = "data/published-urls.txt"
+
+
 def test_not_ready_without_an_approved_home_page(tmp_path):
-    ready, reason = production_status(repo_without_content(tmp_path))
-    assert ready is False
-    assert "content/pl/home/index.md" in reason
+    status = production_status(repo_without_content(tmp_path))
+    assert (status.ready, status.error) == (False, False)
+    assert "content/pl/home/index.md" in status.reason
 
 
-def test_ready_once_the_polish_home_page_exists(tmp_path):
+def test_ready_once_the_polish_home_page_exists_and_is_registered(tmp_path):
     root = repo_without_content(tmp_path)
-    write(root / "content/pl/home/index.md", "# Home\n")
-    assert production_status(root) == (True, "approved production content found")
+    write(root / HOME, "# Home\n")
+    write(root / REGISTRY, "/\n/courses/\n")
+    status = production_status(root)
+    assert (status.ready, status.error) == (True, False)
+    assert status.reason == "approved production content found"
+
+
+def test_launch_requires_the_home_page_in_the_url_registry(tmp_path, capsys):
+    # The registry arms the guard below: without "/" in it, losing the home page could go unnoticed.
+    root = repo_without_content(tmp_path)
+    write(root / HOME, "# Home\n")
+    for registry in (None, "/courses/\n"):
+        if registry is not None:
+            write(root / REGISTRY, registry)
+        status = production_status(root)
+        assert (status.ready, status.error) == (False, True)
+        assert main(["production-status", "--source", str(root)]) == 1
+        assert "teaching-hub urls --write" in capsys.readouterr().out
+
+
+def test_removing_the_home_page_of_a_published_site_is_an_error(tmp_path, capsys):
+    # Not a quiet "deployment skipped": the last deployment would stay online with green checks.
+    root = repo_without_content(tmp_path)
+    write(root / REGISTRY, "/\n/licensing/\n/courses/\n")
+    status = production_status(root)
+    assert (status.ready, status.error) == (False, True)
+    output = tmp_path / "github-output"
+    assert main(["production-status", "--source", str(root), "--github-output", str(output)]) == 1
+    out = capsys.readouterr().out
+    assert "content/pl/home/index.md" in out and "data/published-urls.txt" in out
+    assert output.read_text(encoding="utf-8") == "ready=false\ncontent=true\n"
+
+
+def test_unpublishing_on_purpose_is_reported_explicitly(tmp_path, capsys):
+    # The conscious way: remove the home page and its URLs from the registry in the same change.
+    root = repo_without_content(tmp_path)
+    write(root / REGISTRY, "/courses/\n")
+    status = production_status(root)
+    assert (status.ready, status.error) == (False, False)
+    assert "unpublished" in status.reason and "GitHub Pages" in status.reason
+    assert main(["production-status", "--source", str(root)]) == 0
+    assert "unpublished" in capsys.readouterr().out
 
 
 def test_status_command_writes_the_gate_for_github_actions(tmp_path):
@@ -40,7 +84,8 @@ def test_status_command_writes_the_gate_for_github_actions(tmp_path):
     output = tmp_path / "github-output"
     assert main(["production-status", "--source", str(root), "--github-output", str(output)]) == 0
     assert output.read_text(encoding="utf-8") == "ready=false\ncontent=false\n"
-    write(root / "content/pl/home/index.md", "# Home\n")
+    write(root / HOME, "# Home\n")
+    write(root / REGISTRY, "/\n")
     output.write_text("", encoding="utf-8")
     assert main(["production-status", "--source", str(root), "--github-output", str(output)]) == 0
     assert output.read_text(encoding="utf-8") == "ready=true\ncontent=true\n"
@@ -134,8 +179,46 @@ def test_production_checks_accept_a_real_artifact_once_fixture_identifiers_are_g
     # Guards against false positives: canonical links, sitemaps, pages and links of a real Zensical
     # build must pass the production checks. Identifiers are renamed only inside this temporary copy.
     make_production_like(sample)
+    assert main(["urls", "--source", str(sample), "--config-dir", str(sample / "renderer"), "--write"]) == 0
     code = main(["build", "--production", "--source", str(sample), "--config-dir", str(sample / "renderer"),
                  "--build-dir", str(tmp_path / "b"), "--site-dir", str(tmp_path / "_site")])
     assert code == 0
     assert main(["check", "--production", "--site-dir", str(tmp_path / "_site"),
                  "--source", str(sample), "--config-dir", str(sample / "renderer")]) == 0
+
+
+def test_production_build_requires_every_public_url_in_the_registry(sample, tmp_path, capsys):
+    # A page that is not registered could later disappear without the url-removed check noticing.
+    make_production_like(sample)
+    args = ["--source", str(sample), "--config-dir", str(sample / "renderer")]
+    assert main(["urls", *args, "--write"]) == 0
+    registry = sample / REGISTRY
+    lines = registry.read_text(encoding="utf-8").splitlines()
+    registry.write_text("\n".join(u for u in lines if u != "/courses/demo-course-a/task-sets/alpha/") + "\n", encoding="utf-8")
+    capsys.readouterr()
+    code = main(["build", "--production", *args, "--build-dir", str(tmp_path / "b"), "--site-dir", str(tmp_path / "_site")])
+    assert code == 1
+    out = capsys.readouterr().out
+    assert "[url-not-registered] /courses/demo-course-a/task-sets/alpha/" in out
+    assert "teaching-hub urls --write" in out
+
+
+def test_production_build_checks_links_to_files_of_the_site_repository(sample, tmp_path, capsys):
+    make_production_like(sample)
+    args = ["--source", str(sample), "--config-dir", str(sample / "renderer")]
+    write(sample / "LICENSE", "MIT\n")
+    licensing = sample / "content/pl/home/licensing.md"
+    licensing.write_text(
+        licensing.read_text(encoding="utf-8")
+        + "\n[MIT](https://github.com/michalmaj/michalmaj.github.io/blob/main/LICENSE)"
+        + " · [CC BY](https://github.com/michalmaj/michalmaj.github.io/blob/main/LICENSE-CONTENT.md)\n",
+        encoding="utf-8",
+    )
+    assert main(["urls", *args, "--write"]) == 0
+    capsys.readouterr()
+    site_dir = tmp_path / "_site"
+    assert main(["build", "--production", *args, "--build-dir", str(tmp_path / "b"), "--site-dir", str(site_dir)]) == 1
+    out = capsys.readouterr().out
+    assert "[broken-repository-link]" in out and "LICENSE-CONTENT.md" in out and "blob/main/LICENSE " not in out
+    write(sample / "LICENSE-CONTENT.md", "# Teaching Content License\n")
+    assert main(["check", "--production", "--site-dir", str(site_dir), *args]) == 0
