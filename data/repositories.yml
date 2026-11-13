@@ -1,0 +1,11 @@
+# Repositories referenced by published materials. Facts checked against each repository's
+# default branch on 2026-11-13.
+repositories:
+  - id: software-engineering-in-practice
+    name: Software Engineering in Practice
+    url: https://github.com/michalmaj/software-engineering-in-practice
+    default_branch: main
+    maturity: not_assessed
+    technologies: [Python, Go, Java]
+    content_languages: [en, pl]
+    licenses: {code: MIT, content: CC-BY-4.0}

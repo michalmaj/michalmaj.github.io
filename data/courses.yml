@@ -1,0 +1,8 @@
+# Courses shown on the site. A course is published in a language only when it has a name,
+# a description and at least one published task set or guide in that language.
+courses:
+  - id: software-engineering
+    name:
+      pl: "Inżynieria oprogramowania"
+    summary:
+      pl: "Praktyczny kurs w 30 laboratoriach: od terminala i Gita, przez testy, projektowanie i pracę w zespole, po API, wydanie i projekt zespołowy. Na tej stronie dostępny jest obecnie pierwszy zestaw zadań."
