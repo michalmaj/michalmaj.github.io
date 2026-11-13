@@ -5,6 +5,7 @@ Only published/archived material is written; drafts only in local preview.
 """
 
 import copy
+import json
 import os
 import shutil
 from dataclasses import dataclass
@@ -337,6 +338,7 @@ def _write(path: Path, text: str) -> None:
 
 THEME_CSS = ("tokens.css", "theme.css")
 THEME_URL = "stylesheets/teaching-hub"
+NAVIGATION_SCRIPT = "javascripts/teaching-hub/navigation.js"
 
 
 def _copy_theme(site: Site, space: str, docs: Path) -> list[str]:
@@ -362,6 +364,13 @@ class _ConfigDumper(yaml.SafeDumper):
 
 
 _ConfigDumper.add_representer(_PythonName, lambda dumper, name: dumper.represent_scalar(f"tag:yaml.org,2002:python/name:{name}", ""))
+
+
+def _copy_navigation_script(site: Site, lang: str, docs: Path) -> None:
+    """The navigation script, with its interface string in the build's language."""
+    script = (site.config_dir / "theme" / "navigation.js").read_text(encoding="utf-8")
+    script = script.replace('"__TH_NAV_SECTION_TOGGLE__"', json.dumps(t(site, lang, "nav_section_toggle"), ensure_ascii=False))
+    _write(docs / NAVIGATION_SCRIPT, script)
 
 
 def _palette(site: Site, lang: str) -> list[dict]:
@@ -484,6 +493,7 @@ def assemble(site: Site, out_dir: Path, include_drafts: bool = False) -> list[Bu
             else:
                 nav, hidden = _courses_build(site, lang, root, include_drafts)
             extra_css = _copy_theme(site, space, root / "docs")
+            _copy_navigation_script(site, lang, root / "docs")
             cfg = _config(site, lang, space, nav, hidden, extra_css)
             _write(root / "mkdocs.yml", yaml.dump(cfg, Dumper=_ConfigDumper, allow_unicode=True, sort_keys=False))
             builds.append(Build(lang, space, space_root(lang, site.spaces[space].path), root))

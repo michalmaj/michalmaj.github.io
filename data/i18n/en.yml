@@ -6,6 +6,8 @@ space_for_employers: "For employers"
 nav_home: "Home"
 nav_licensing: "Licensing"
 nav_catalog: "Courses"
+# Name of the button that expands or collapses a navigation section; {name} is the section.
+nav_section_toggle: "Subsections: {name}"
 nav_how_to_use: "How to use"
 task_set: "Task set"
 task: "Task"

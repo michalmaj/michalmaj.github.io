@@ -1,4 +1,5 @@
 import json
+from html.parser import HTMLParser
 import re
 from pathlib import Path
 
@@ -138,3 +139,39 @@ def test_only_the_root_404_page_is_published(sample, tmp_path, renderer):
     site_dir = tmp_path / "_site"
     build_site(load_site(sample), tmp_path / "build", site_dir, renderer=renderer)
     assert sorted(p.relative_to(site_dir).as_posix() for p in site_dir.rglob("404.html")) == ["404.html"]
+
+
+class _Navigation(HTMLParser):
+    """Section toggles of the theme: <label for="__nav_N">, its checkbox and the list it controls."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.toggles: list[dict] = []
+        self.checkboxes: set[str] = set()
+        self.labelled_navs: set[str] = set()
+        self.scripts: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "label" and "md-nav__link" in (a.get("class") or "").split() and (a.get("for") or "").startswith("__nav_"):
+            self.toggles.append(a)
+        elif tag == "input" and a.get("type") == "checkbox" and a.get("id"):
+            self.checkboxes.add(a["id"])
+        elif tag == "nav" and a.get("aria-labelledby"):
+            self.labelled_navs.add(a["aria-labelledby"])
+        elif tag == "script" and a.get("src"):
+            self.scripts.append(a["src"])
+
+
+@pytest.mark.parametrize("renderer", RENDERERS)
+def test_navigation_script_finds_the_section_toggles_it_makes_accessible(sample, tmp_path, renderer):
+    # navigation.js relies on this markup; a theme upgrade that changes it must fail here.
+    site_dir = tmp_path / "_site"
+    build_site(load_site(sample), tmp_path / "build", site_dir, renderer=renderer)
+    page = _Navigation()
+    page.feed((site_dir / "courses/sample-course-a/index.html").read_text(encoding="utf-8"))
+    assert any(src.endswith("javascripts/teaching-hub/navigation.js") for src in page.scripts)
+    assert page.toggles, "no section toggle in the navigation"
+    for toggle in page.toggles:
+        assert toggle["for"] in page.checkboxes
+        assert toggle.get("id") in page.labelled_navs

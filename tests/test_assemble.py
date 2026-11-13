@@ -178,6 +178,18 @@ def test_licensing_table_names_every_column(sample, tmp_path):
     assert "| Repository | Code | Content |" in page(out, "en", "home", "licensing.md")
 
 
+# ---------------------------------------------------------------- navigation accessibility
+
+
+def test_every_build_loads_the_navigation_script_with_the_toggle_name_in_its_language(sample, tmp_path):
+    out, builds = build(sample, tmp_path)
+    expected = {"pl": '"Podsekcje: {name}"', "en": '"Subsections: {name}"'}
+    for lang, space in builds:
+        assert "javascripts/teaching-hub/navigation.js" in config(out, lang, space).get("extra_javascript", []), (lang, space)
+        script = (out / lang / space / "docs/javascripts/teaching-hub/navigation.js").read_text(encoding="utf-8")
+        assert expected[lang] in script and "__TH_" not in script, (lang, space)
+
+
 # ---------------------------------------------------------------- heading anchors
 
 
