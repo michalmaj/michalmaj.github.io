@@ -16,7 +16,7 @@ FIXTURE_MARKERS = ("sample-course-", "[EN placeholder]")
 # Production content: pages, course and repository data, the URL registry and site assets.
 # Code, renderer configuration and interface strings (data/i18n/) alone are not content.
 CONTENT_DIRS = ("content", "assets")
-CONTENT_FILES = ("data/courses.yml", "data/repositories.yml", "data/third-party.yml", "data/published-urls.txt")
+CONTENT_FILES = ("data/courses.yml", "data/repositories.yml", "data/third-party.yml", "data/published-urls.txt", "data/anchor-aliases.yml")
 _IGNORED = {".DS_Store"}
 
 

@@ -251,3 +251,17 @@ def test_published_url_cannot_disappear(sample):
 def test_external_material_must_not_point_to_a_local_service(sample):
     replace_in(sample / ALPHA_PL, "url: https://git-scm.com/doc", "url: https://localhost:8443/docs")
     assert "local-path" in error_codes(run(sample))
+
+
+def test_anchor_aliases_need_a_public_page_and_a_new_anchor(sample):
+    write(sample / "data/anchor-aliases.yml", """aliases:
+  - {page: /nie-ma/, anchor: a, target: b}
+  - {page: /licensing/, anchor: same, target: same}
+  - {page: /licensing/, anchor: x, target: y}
+  - {page: /licensing/, anchor: x, target: z}
+  - {page: /, anchor: strona-gowna, target: strona-glowna}
+""")
+    issues = [i for i in validate(load_site(sample)) if i.code == "anchor-alias"]
+    assert sorted(i.path for i in issues) == [
+        "data/anchor-aliases.yml[0]", "data/anchor-aliases.yml[1]", "data/anchor-aliases.yml[3]",
+    ]

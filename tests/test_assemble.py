@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -20,8 +21,15 @@ def page(out: Path, lang: str, space: str, rel: str) -> str:
     return (out / lang / space / "docs" / rel).read_text(encoding="utf-8")
 
 
+class _ConfigLoader(yaml.SafeLoader):
+    """Reads renderer configs: `!!python/name:` values become their dotted names."""
+
+
+_ConfigLoader.add_multi_constructor("tag:yaml.org,2002:python/name:", lambda loader, suffix, node: f"python:{suffix}")
+
+
 def config(out: Path, lang: str, space: str) -> dict:
-    return yaml.safe_load((out / lang / space / "mkdocs.yml").read_text(encoding="utf-8"))
+    return yaml.load((out / lang / space / "mkdocs.yml").read_text(encoding="utf-8"), Loader=_ConfigLoader)
 
 
 def all_generated_text(out: Path) -> str:
@@ -161,7 +169,46 @@ def test_licensing_page_lists_licenses_of_linked_repositories(sample, tmp_path):
     out, _ = build(sample, tmp_path)
     licensing = page(out, "pl", "home", "licensing.md")
     assert "| [Deep Learning](https://github.com/michalmaj/deep-learning) | MIT | CC-BY-SA-4.0 |" in licensing
-    assert "## Materiały osób trzecich" in licensing
+    assert re.search(r"^## (<span [^>]*></span>)?Materiały osób trzecich$", licensing, re.M)
+
+
+# ---------------------------------------------------------------- heading anchors
+
+
+def test_every_build_makes_heading_ids_with_the_site_slugify(sample, tmp_path):
+    out, builds = build(sample, tmp_path)
+    for lang, space in builds:
+        toc = [e["toc"] for e in config(out, lang, space)["markdown_extensions"] if isinstance(e, dict) and "toc" in e]
+        assert toc == [{"permalink": True, "slugify": "python:teaching_hub.slugs.slugify"}], (lang, space)
+
+
+ALIASES = """aliases:
+  - page: /
+    anchor: strona-gowna
+    target: strona-glowna
+  - page: /licensing/
+    anchor: materiay-osob-trzecich
+    target: materialy-osob-trzecich
+  - page: /courses/sample-course-a/
+    anchor: wykorzystywane-materiay
+    target: wykorzystywane-materialy
+"""
+ALIAS = '<span id="{}" class="th-anchor-alias"></span>'
+
+
+def test_published_anchors_that_changed_stay_on_their_headings(sample, tmp_path):
+    write(sample / "data/anchor-aliases.yml", ALIASES)
+    out, _ = build(sample, tmp_path)
+    assert "# " + ALIAS.format("strona-gowna") + "Strona główna" in page(out, "pl", "home", "index.md")
+    assert "## " + ALIAS.format("materiay-osob-trzecich") + "Materiały osób trzecich" in page(out, "pl", "home", "licensing.md")
+    assert "## " + ALIAS.format("wykorzystywane-materiay") + "Wykorzystywane materiały" in page(
+        out, "pl", "courses", "sample-course-a/index.md")
+    assert "th-anchor-alias" not in page(out, "en", "home", "index.md")
+
+
+def test_headings_get_no_aliases_without_the_alias_registry(sample, tmp_path):
+    out, _ = build(sample, tmp_path)
+    assert "th-anchor-alias" not in all_generated_text(out)
 
 
 DRAFT = """---

@@ -250,3 +250,22 @@ def check_repository_links(site_dir: Path, repository_url: str, source_root: Pat
             if not _exists_exactly(source_root, target, directory=kind == "tree"):
                 issues.append(error("broken-repository-link", rel, f"{kind}/{branch}/{target} does not exist in the source ({href})"))
     return issues
+
+
+def check_anchor_aliases(site_dir: Path, aliases) -> list[Issue]:
+    """Each published anchor that changed must still exist on its page, next to its target heading."""
+    site_dir = Path(site_dir)
+    issues: list[Issue] = []
+    for alias in aliases:
+        target = _target_file(site_dir, alias.page)
+        ids: set[str] = set()
+        if target is not None:
+            page = _Page()
+            page.feed(target.read_text(encoding="utf-8", errors="replace"))
+            ids = page.ids
+        missing = [a for a in (alias.anchor, alias.target) if a not in ids]
+        if missing:
+            issues.append(error("broken-anchor-alias", alias.page,
+                                f"#{alias.anchor} → #{alias.target}: {', '.join('#' + m for m in missing)} not on the page "
+                                "(see data/anchor-aliases.yml)"))
+    return issues

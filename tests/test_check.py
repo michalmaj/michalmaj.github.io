@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from conftest import write
-from teaching_hub.check import check_artifact, check_repository_links, check_tracked_paths
+from teaching_hub.check import check_anchor_aliases, check_artifact, check_repository_links, check_tracked_paths
+from teaching_hub.models import AnchorAlias
 
 PAGE = '<html lang="pl"><body>{}</body></html>'
 
@@ -169,3 +170,16 @@ def test_repository_links_are_case_sensitive_like_github(tmp_path):
     write(source / "LICENSE-CONTENT.md", "x\n")
     site = make_site(tmp_path, {"licensing/index.html": f'<a href="{SITE_REPO}/blob/main/LICENSE-CONTENT.MD">x</a>'})
     assert [i.code for i in check_repository_links(site, SITE_REPO, source)] == ["broken-repository-link"]
+
+
+def test_anchor_alias_needs_both_anchors_on_its_page(tmp_path):
+    site = tmp_path / "_site"
+    write(site / "index.html", '<h1 id="new"><span id="old" class="th-anchor-alias"></span>Tytuł</h1>')
+    write(site / "licensing/index.html", '<h2 id="new2">Tytuł</h2>')
+    aliases = [
+        AnchorAlias(page="/", anchor="old", target="new"),
+        AnchorAlias(page="/licensing/", anchor="old2", target="new2"),
+        AnchorAlias(page="/gone/", anchor="a", target="b"),
+    ]
+    issues = check_anchor_aliases(site, aliases)
+    assert sorted((i.code, i.path) for i in issues) == [("broken-anchor-alias", "/gone/"), ("broken-anchor-alias", "/licensing/")]

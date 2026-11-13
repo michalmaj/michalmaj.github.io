@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from conftest import write
-from teaching_hub.check import check_artifact
+from teaching_hub.check import check_anchor_aliases, check_artifact
 from teaching_hub.loader import load_site
 from teaching_hub.render import RenderError, build_site
 
@@ -101,3 +101,16 @@ def test_colour_scheme_preference_is_stored_in_one_scope_for_all_builds(sample, 
         assert match, f"no storage scope in /{prefix}"
         scopes[f"/{prefix}"] = match.group(1)
     assert scopes == {"/": "/", "/courses/": "/", "/en/": "/", "/en/courses/": "/"}
+
+
+@pytest.mark.parametrize("renderer", RENDERERS)
+def test_heading_ids_keep_polish_letters_and_published_anchors_still_lead_to_them(sample, tmp_path, renderer):
+    write(sample / "data/anchor-aliases.yml", "aliases:\n  - {page: /, anchor: strona-gowna, target: strona-glowna}\n")
+    site = load_site(sample)
+    site_dir = tmp_path / "_site"
+    build_site(site, tmp_path / "build", site_dir, renderer=renderer)
+    html = (site_dir / "index.html").read_text(encoding="utf-8")
+    assert re.search(r'<h1 id="strona-glowna"[^>]*><span id="strona-gowna" class="th-anchor-alias"></span>Strona główna', html)
+    assert check_anchor_aliases(site_dir, site.anchor_aliases) == []
+    index = build_index(site_dir, "")
+    assert "strona-glowna" in index and "th-anchor-alias" not in index and "strona-gowna" not in index

@@ -17,6 +17,7 @@ from .i18n import t
 from .loader import Doc, Site
 from .mdtools import find_section, task_headings
 from .models import LANGS, ExternalMaterial, RepoMaterial
+from .slugs import add_anchor_aliases
 from .urls import (
     doc_url,
     lang_prefix,
@@ -352,6 +353,17 @@ def _copy_theme(site: Site, space: str, docs: Path) -> list[str]:
     return [f"{THEME_URL}/{name}" for name in names[len(THEME_CSS):]]
 
 
+class _PythonName(str):
+    """A Python callable named in the renderer config (`!!python/name:`), e.g. the toc slugify."""
+
+
+class _ConfigDumper(yaml.SafeDumper):
+    pass
+
+
+_ConfigDumper.add_representer(_PythonName, lambda dumper, name: dumper.represent_scalar(f"tag:yaml.org,2002:python/name:{name}", ""))
+
+
 def _palette(site: Site, lang: str) -> list[dict]:
     """Native colour scheme toggle: system → light → dark → system."""
     custom = {"primary": "custom", "accent": "custom"}
@@ -369,6 +381,9 @@ def _config(site: Site, lang: str, space: str, nav: list, not_in_nav: list[str],
     base = yaml.safe_load((site.config_dir / "base.yml").read_text(encoding="utf-8")) or {}
     cfg = copy.deepcopy(base)
     cfg["extra_css"] = [*cfg.get("extra_css", []), *extra_css]
+    for entry in cfg.get("markdown_extensions", []):
+        if isinstance(entry, dict) and isinstance(entry.get("toc"), dict):
+            entry["toc"]["slugify"] = _PythonName("teaching_hub.slugs.slugify")
     space_cfg = site.spaces[space]
     licensing_lang = lang if site.find("licensing", lang) and space_has_content(site, "home", lang) else "pl"
     licensing_url = f"{lang_prefix(licensing_lang)}/licensing/"
@@ -433,6 +448,27 @@ def _courses_build(site: Site, lang: str, root: Path, include_drafts: bool) -> t
     return nav, hidden
 
 
+def _page_source(docs: Path, rel_url: str) -> Path | None:
+    """The Markdown file of a page URL relative to its build (directory URLs)."""
+    rel = rel_url.strip("/")
+    for candidate in ([docs / "index.md"] if not rel else [docs / f"{rel}.md", docs / rel / "index.md"]):
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _apply_anchor_aliases(site: Site, builds: list[Build]) -> None:
+    """Keep published anchors that changed (data/anchor-aliases.yml) on their headings."""
+    for alias in site.anchor_aliases:
+        owners = [b for b in builds if alias.page.startswith(b.prefix)]
+        for build in sorted(owners, key=lambda b: len(b.prefix), reverse=True):
+            source = _page_source(build.root / "docs", alias.page[len(build.prefix):])
+            if source is not None:
+                text = source.read_text(encoding="utf-8")
+                source.write_text(add_anchor_aliases(text, {alias.target: [alias.anchor]}), encoding="utf-8")
+                break  # a missing target heading is reported by check_anchor_aliases on the artifact
+
+
 def assemble(site: Site, out_dir: Path, include_drafts: bool = False) -> list[Build]:
     if include_drafts and (os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS")):
         raise PreviewNotAllowed("draft preview is a local-only mode and is refused in CI")
@@ -449,6 +485,7 @@ def assemble(site: Site, out_dir: Path, include_drafts: bool = False) -> list[Bu
                 nav, hidden = _courses_build(site, lang, root, include_drafts)
             extra_css = _copy_theme(site, space, root / "docs")
             cfg = _config(site, lang, space, nav, hidden, extra_css)
-            _write(root / "mkdocs.yml", yaml.safe_dump(cfg, allow_unicode=True, sort_keys=False))
+            _write(root / "mkdocs.yml", yaml.dump(cfg, Dumper=_ConfigDumper, allow_unicode=True, sort_keys=False))
             builds.append(Build(lang, space, space_root(lang, site.spaces[space].path), root))
+    _apply_anchor_aliases(site, builds)
     return builds
