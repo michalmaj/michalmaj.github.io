@@ -16,20 +16,33 @@ def _in_build(doc: Doc, include_drafts: bool) -> bool:
     return doc.status in ("published", "archived") or (include_drafts and doc.draft)
 
 
+def has_description(site: Site, course, lang: str) -> bool:
+    """An approved description: a summary in data/courses.yml or a non-empty course index page."""
+    index = site.find("course_index", lang, course.id)
+    return bool(course.summary.get(lang)) or (index is not None and bool(index.body.strip()))
+
+
+def has_published_material(site: Site, course_id: str, lang: str, include_drafts: bool = False) -> bool:
+    return any(
+        d.status == "published" or (include_drafts and d.draft)
+        for kind in ("task_set", "guide")
+        for d in site.by_kind(kind, lang, course_id)
+    )
+
+
 def visible_courses(site: Site, lang: str, include_drafts: bool = False) -> list[str]:
-    """Course ids visible in `lang`, in catalog order."""
-    visible = []
-    for course in site.courses.values():
-        if not course.name.get(lang):
-            continue
-        has_description = bool(course.summary.get(lang)) or site.find("course_index", lang, course.id) is not None
-        has_material = any(
-            d.status == "published" or (include_drafts and d.draft)
-            for kind in ("task_set", "guide")
-            for d in site.by_kind(kind, lang, course.id)
-        )
-        if has_description or has_material:
-            visible.append(course)
+    """Course ids visible in `lang`, in catalog order.
+
+    A course is published in a language only when it has a name, a description and at least one
+    published task set or guide in that language: no empty course pages.
+    """
+    visible = [
+        course
+        for course in site.courses.values()
+        if course.name.get(lang)
+        and has_description(site, course, lang)
+        and has_published_material(site, course.id, lang, include_drafts)
+    ]
     visible.sort(key=lambda c: (c.order is None, c.order or 0))
     return [c.id for c in visible]
 

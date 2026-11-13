@@ -6,6 +6,7 @@ courses:
       en: "[EN placeholder] Sample course A"
     summary:
       pl: "Opis zastępczy przedmiotu A."
+      en: "Placeholder description of course A."
     order: 1
   - id: sample-course-b
     name:
@@ -17,3 +18,9 @@ courses:
     name:
       pl: "Przedmiot przykładowy C"
     order: 3
+  - id: sample-course-d
+    name:
+      pl: "Przedmiot przykładowy D"
+    summary:
+      pl: "Opis zastępczy przedmiotu D (bez opublikowanych materiałów)."
+    order: 4
