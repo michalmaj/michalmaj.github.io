@@ -23,6 +23,23 @@ def sample(tmp_path: Path) -> Path:
     return root
 
 
+def make_production_like(root: Path) -> Path:
+    """Rename the fixture's placeholder identifiers inside a temporary copy.
+
+    Production builds refuse the fixture's markers, so tests of the production path need content
+    without them. Only the copy under tmp_path is changed; nothing here is real course content.
+    """
+    for path in root.rglob("*"):
+        if path.is_file() and path.suffix in (".md", ".yml"):
+            text = path.read_text(encoding="utf-8")
+            # The English fixture name "Sample course A" would also yield the heading id "sample-course-a".
+            text = text.replace("sample-course-", "demo-course-").replace("[EN placeholder] Sample course", "Demo course")
+            path.write_text(text, encoding="utf-8")
+    for directory in sorted(root.rglob("sample-course-*"), reverse=True):
+        directory.rename(directory.with_name(directory.name.replace("sample-course-", "demo-course-")))
+    return root
+
+
 def error_codes(issues) -> set[str]:
     return {i.code for i in issues if i.level == "error"}
 

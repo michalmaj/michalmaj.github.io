@@ -10,7 +10,7 @@ from pathlib import Path
 
 from .issues import Issue, error, warning
 from .loader import Site
-from .models import RepoMaterial
+from .models import RepoMaterial, Repository
 
 # resolver(repo_id, ref, path) -> True (exists) | False (missing) | None (cannot verify)
 Resolver = Callable[[str, str, str], bool | None]
@@ -21,6 +21,18 @@ def _materials(doc):
     for task in getattr(doc.meta, "tasks", {}).values():
         found += task.materials
     return found
+
+
+def referenced_repositories(site: Site) -> list[Repository]:
+    """Registered repositories that task sets or guides refer to (any status), in registry order."""
+    used = {
+        m.repository
+        for doc in site.docs
+        if doc.kind in ("task_set", "guide") and doc.meta is not None
+        for m in _materials(doc)
+        if isinstance(m, RepoMaterial)
+    }
+    return [repo for repo_id, repo in site.repositories.items() if repo_id in used]
 
 
 def check_materials(site: Site, resolver: Resolver) -> list[Issue]:

@@ -8,8 +8,8 @@ from pathlib import Path
 from .assemble import PreviewNotAllowed
 from .check import check_artifact, check_pages_present, check_site_urls, check_tracked_paths, draft_markers
 from .loader import load_site
-from .materials import GitResolver, check_materials
-from .production import FIXTURE_MARKERS, is_test_fixture, production_status
+from .materials import GitResolver, check_materials, referenced_repositories
+from .production import FIXTURE_MARKERS, has_production_content, is_test_fixture, production_status
 from .render import RenderError, build_site
 from .urls import public_urls
 from .validate import validate
@@ -83,10 +83,13 @@ def _cmd_check(args) -> int:
 
 def _cmd_production_status(args) -> int:
     ready, reason = production_status(Path(args.source))
+    content = has_production_content(Path(args.source))
     print(("ready: " if ready else "not ready: ") + reason)
+    print("production content: " + ("found" if content else "none yet"))
     if args.github_output:
         with open(args.github_output, "a", encoding="utf-8") as out:
-            out.write(f"ready={'true' if ready else 'false'}\n")
+            # ready: the launch gate (deploy). content: anything CI must validate and build.
+            out.write(f"ready={'true' if ready else 'false'}\ncontent={'true' if content else 'false'}\n")
     return 0
 
 
@@ -101,6 +104,13 @@ def _cmd_check_tracked(args) -> int:
 def _cmd_check_materials(args) -> int:
     site = load_site(Path(args.source), config_dir=Path(args.config_dir))
     return _report(check_materials(site, GitResolver([Path(r) for r in args.repos_root])))
+
+
+def _cmd_repositories(args) -> int:
+    site = load_site(Path(args.source), config_dir=Path(args.config_dir))
+    for repo in referenced_repositories(site):
+        print(f"{repo.id} {repo.url}")
+    return 0
 
 
 def _cmd_urls(args) -> int:
@@ -157,6 +167,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--config-dir", default="renderer", help="renderer configuration (default: ./renderer)")
     p.add_argument("--repos-root", action="append", required=True)
     p.set_defaults(func=_cmd_check_materials)
+
+    p = sub.add_parser("repositories", help="list repositories referenced by materials: '<id> <url>' per line")
+    p.add_argument("--source", default=".")
+    p.add_argument("--config-dir", default="renderer", help="renderer configuration (default: ./renderer)")
+    p.set_defaults(func=_cmd_repositories)
 
     p = sub.add_parser("urls", help="list public URLs or write data/published-urls.txt")
     p.add_argument("--source", default=".")

@@ -10,6 +10,28 @@ HOME_PAGE = "content/pl/home/index.md"
 FIXTURE_MARKERS = ("sample-course-", "[EN placeholder]")
 
 
+# Production content: pages, course and repository data, the URL registry and site assets.
+# Code, renderer configuration and interface strings (data/i18n/) alone are not content.
+CONTENT_DIRS = ("content", "assets")
+CONTENT_FILES = ("data/courses.yml", "data/repositories.yml", "data/third-party.yml", "data/published-urls.txt")
+_IGNORED = {".DS_Store"}
+
+
+def has_production_content(root: Path) -> bool:
+    """Whether the repository holds production content that CI must validate and build.
+
+    Independent of the launch gate: content without a home page is not deployed, but it is checked.
+    """
+    root = Path(root)
+    if any((root / name).is_file() for name in CONTENT_FILES):
+        return True
+    return any(
+        path.is_file() and path.name not in _IGNORED
+        for directory in CONTENT_DIRS
+        for path in (root / directory).rglob("*")
+    )
+
+
 def production_status(root: Path) -> tuple[bool, str]:
     """(ready, reason): whether the repository holds approved production content to publish."""
     if (Path(root) / HOME_PAGE).is_file():

@@ -80,3 +80,21 @@ def test_check_tracked_flags_private_files(tmp_path, capsys):
     listing.write_text("README.md\nARCHITECTURE.md\n", encoding="utf-8")
     assert main(["check-tracked", "--from-file", str(listing)]) == 1
     assert "ARCHITECTURE.md" in capsys.readouterr().out
+
+
+def test_repositories_command_lists_only_repositories_referenced_by_materials(sample, capsys):
+    # CI clones exactly these to check that every repository/ref/path in the content exists.
+    registry = sample / "data/repositories.yml"
+    registry.write_text(
+        registry.read_text(encoding="utf-8")
+        + "  - id: unused-repository\n    name: Unused\n"
+        + "    url: https://github.com/michalmaj/unused-repository\n    default_branch: main\n",
+        encoding="utf-8",
+    )
+    assert main(["repositories", "--source", str(sample), "--config-dir", str(sample / "renderer")]) == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "software-engineering-in-practice https://github.com/michalmaj/software-engineering-in-practice",
+        "mechatronic-systems-programming https://github.com/michalmaj/mechatronic-systems-programming",
+        "deep-learning https://github.com/michalmaj/deep-learning",
+        "python-dev-setup-for-beginners https://github.com/michalmaj/python-dev-setup-for-beginners",
+    ]

@@ -14,7 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Content checked by CI. The placeholder sample is the only content so far.
+  # Placeholder sample checked by the tests and build jobs. The repository's own production content
+  # (content/, data/) is checked by the production job below.
   SITE_SOURCE: tests/fixtures/sample
   # Builds the sample must produce: PL/EN × home/courses.
   EXPECTED_BUILDS: "/ /courses/ /en/ /en/courses/"
@@ -98,5 +99,74 @@ jobs:
         with:
           name: site-zensical
           path: _site/
+          if-no-files-found: error
+          retention-days: 7
+
+  production:
+    # Validates and builds the repository's own production content exactly as the Pages workflow
+    # would, so that broken content fails the pull request instead of the deployment. Never deploys:
+    # read-only token, no Pages permissions, no deployment actions.
+    name: Production content
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Validate repository data and content
+        run: uv run teaching-hub validate --source .
+
+      - name: Look for production content
+        id: status
+        run: |
+          uv run teaching-hub production-status --source . --github-output "$GITHUB_OUTPUT" | tee status.txt
+          {
+            echo "### Production content"
+            echo
+            cat status.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report transitional state
+        if: steps.status.outputs.content != 'true'
+        run: echo "::notice title=No production content::The repository has no production content yet (content/ and course data are empty). Its data was validated; there is nothing to build."
+
+      - name: Check repository materials
+        if: steps.status.outputs.content == 'true'
+        run: |
+          # Every repository/ref/path referenced by the content must exist. Clones are read-only lookups.
+          uv run teaching-hub repositories --source . > repositories.txt
+          while read -r id url; do
+            git clone --quiet --no-checkout "$url" "$RUNNER_TEMP/repositories/$id"
+          done < repositories.txt
+          uv run teaching-hub check-materials --source . --repos-root "$RUNNER_TEMP/repositories"
+
+      - name: Build production site with Zensical
+        if: steps.status.outputs.content == 'true'
+        run: uv run teaching-hub build --production --source . --renderer zensical --build-dir build/production-zensical --site-dir _site-production
+
+      - name: Control build with MkDocs Material
+        if: steps.status.outputs.content == 'true'
+        run: uv run teaching-hub build --production --source . --renderer material --build-dir build/production-material --site-dir _site-production-material
+
+      - name: Check production artifacts
+        if: steps.status.outputs.content == 'true'
+        run: |
+          uv run teaching-hub check --production --site-dir _site-production --source .
+          uv run teaching-hub check --production --site-dir _site-production-material --source .
+
+      - name: Upload production site for manual QA
+        if: steps.status.outputs.content == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: production-site
+          path: _site-production/
           if-no-files-found: error
           retention-days: 7
