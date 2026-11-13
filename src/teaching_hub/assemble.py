@@ -317,7 +317,7 @@ def _licensing_page(site: Site, lang: str) -> str:
     published = [d for d in site.docs if d.kind in ("task_set", "guide") and d.status == "published"]
     repos = _used_repositories(site, published)
     if repos:
-        out += [f"| | {t(site, lang, 'licensing_code')} | {t(site, lang, 'licensing_content')} |", "|---|---|---|"]
+        out += [f"| {t(site, lang, 'licensing_repository')} | {t(site, lang, 'licensing_code')} | {t(site, lang, 'licensing_content')} |", "|---|---|---|"]
         for repo_id in repos:
             repo = site.repositories[repo_id]
             lic = repo.licenses

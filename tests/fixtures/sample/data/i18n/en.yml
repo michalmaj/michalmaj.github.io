@@ -34,8 +34,9 @@ footer_courses: 'Teaching content: CC BY 4.0 · code: MIT · external materials:
 footer_home: '<a href="{licensing_url}">Licensing</a>'
 licensing_third_party: "Third-party materials"
 licensing_repositories: "Licenses of linked repositories"
-licensing_code: "code"
-licensing_content: "content"
+licensing_repository: "Repository"
+licensing_code: "Code"
+licensing_content: "Content"
 none: "none"
 not_found_title: "Page not found"
 not_found_text: "This page does not exist."

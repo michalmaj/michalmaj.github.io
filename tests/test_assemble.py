@@ -172,6 +172,12 @@ def test_licensing_page_lists_licenses_of_linked_repositories(sample, tmp_path):
     assert re.search(r"^## (<span [^>]*></span>)?Materiały osób trzecich$", licensing, re.M)
 
 
+def test_licensing_table_names_every_column(sample, tmp_path):
+    out, _ = build(sample, tmp_path)
+    assert "| Repozytorium | Kod | Treści |" in page(out, "pl", "home", "licensing.md")
+    assert "| Repository | Code | Content |" in page(out, "en", "home", "licensing.md")
+
+
 # ---------------------------------------------------------------- heading anchors
 
 

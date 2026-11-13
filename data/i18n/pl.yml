@@ -34,8 +34,9 @@ footer_courses: 'Treści dydaktyczne: CC BY 4.0 · kod: MIT · materiały zewnę
 footer_home: '<a href="{licensing_url}">Licencje</a>'
 licensing_third_party: "Materiały osób trzecich"
 licensing_repositories: "Licencje linkowanych repozytoriów"
-licensing_code: "kod"
-licensing_content: "treści"
+licensing_repository: "Repozytorium"
+licensing_code: "Kod"
+licensing_content: "Treści"
 none: "brak"
 not_found_title: "Nie znaleziono strony"
 not_found_text: "Strona nie istnieje."

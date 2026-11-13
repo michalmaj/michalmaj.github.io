@@ -11,7 +11,7 @@ REQUIRED_KEYS = frozenset(
         "archived_title", "archived_text", "replaced_by", "draft_title", "draft_text",
         "other_language", "other_language_home", "maturity_in_development", "maturity_archived",
         "lang_pl", "lang_en", "footer_courses", "footer_home", "licensing_third_party",
-        "licensing_repositories", "licensing_code", "licensing_content", "none",
+        "licensing_repositories", "licensing_repository", "licensing_code", "licensing_content", "none",
         "not_found_title", "not_found_text", "section_materials", "section_tasks",
         "breadcrumb", "material_language", "theme_to_light", "theme_to_dark", "theme_to_auto",
         "space_courses_description",
