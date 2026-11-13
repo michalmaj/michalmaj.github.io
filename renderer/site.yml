@@ -1,4 +1,6 @@
 # Pipeline settings shared by all builds.
 site_url: https://michalmaj.github.io/
+# Source repository of the site: links to its files on the main branch are checked against the source.
+repository_url: https://github.com/michalmaj/michalmaj.github.io
 default_language: pl
 languages: [pl, en]

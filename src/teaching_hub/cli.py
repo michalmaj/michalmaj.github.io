@@ -1,18 +1,26 @@
 """Command line: teaching-hub <command> [options]."""
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 from .assemble import PreviewNotAllowed
-from .check import check_artifact, check_pages_present, check_site_urls, check_tracked_paths, draft_markers
+from .check import (
+    check_artifact,
+    check_pages_present,
+    check_repository_links,
+    check_site_urls,
+    check_tracked_paths,
+    draft_markers,
+)
 from .loader import load_site
 from .materials import GitResolver, check_materials, referenced_repositories
 from .production import FIXTURE_MARKERS, has_production_content, is_test_fixture, production_status
 from .render import RenderError, build_site
 from .urls import public_urls
-from .validate import validate
+from .validate import check_registered_urls, validate
 
 
 def _report(issues) -> int:
@@ -30,7 +38,11 @@ def _cmd_validate(args) -> int:
 
 def _production_checks(site, site_dir: Path) -> tuple[list[str], list]:
     """Extra forbidden strings and issues for a production artifact."""
-    return list(FIXTURE_MARKERS), check_site_urls(site_dir, site.settings["site_url"])
+    issues = check_site_urls(site_dir, site.settings["site_url"])
+    issues += check_registered_urls(site)
+    if site.settings.get("repository_url"):
+        issues += check_repository_links(site_dir, site.settings["repository_url"], site.root)
+    return list(FIXTURE_MARKERS), issues
 
 
 def _cmd_build(args) -> int:
@@ -82,15 +94,18 @@ def _cmd_check(args) -> int:
 
 
 def _cmd_production_status(args) -> int:
-    ready, reason = production_status(Path(args.source))
+    status = production_status(Path(args.source))
     content = has_production_content(Path(args.source))
-    print(("ready: " if ready else "not ready: ") + reason)
+    print(("ready: " if status.ready else "error: " if status.error else "not ready: ") + status.reason)
     print("production content: " + ("found" if content else "none yet"))
+    if os.environ.get("GITHUB_ACTIONS") and (status.error or status.reason.startswith("unpublished")):
+        level = "error" if status.error else "warning"
+        print(f"::{level} title=Publication state::{status.reason}")
     if args.github_output:
         with open(args.github_output, "a", encoding="utf-8") as out:
             # ready: the launch gate (deploy). content: anything CI must validate and build.
-            out.write(f"ready={'true' if ready else 'false'}\ncontent={'true' if content else 'false'}\n")
-    return 0
+            out.write(f"ready={'true' if status.ready else 'false'}\ncontent={'true' if content else 'false'}\n")
+    return 1 if status.error else 0
 
 
 def _cmd_check_tracked(args) -> int:

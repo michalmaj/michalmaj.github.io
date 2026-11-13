@@ -213,3 +213,40 @@ def check_site_urls(site_dir: Path, site_url: str) -> list[Issue]:
             rel = path.relative_to(site_dir).as_posix()
             issues.append(error("wrong-site-url", rel, f"{len(wrong)} URL(s) outside {site_url}, e.g. {wrong[0]}"))
     return issues
+
+
+def _exists_exactly(root: Path, rel: str, directory: bool) -> bool:
+    """Like Path.exists, but case-sensitive on every filesystem (GitHub URLs are case-sensitive)."""
+    current = Path(root)
+    for part in [p for p in rel.split("/") if p]:
+        if not current.is_dir() or part not in {child.name for child in current.iterdir()}:
+            return False
+        current = current / part
+    return current.is_dir() if directory else current.is_file()
+
+
+def check_repository_links(site_dir: Path, repository_url: str, source_root: Path, branch: str = "main") -> list[Issue]:
+    """Links to files of the site's own repository on GitHub must point to files in the source.
+
+    The site is deployed from the same commit as its source, so `<repository>/blob/<branch>/<path>`
+    (and `tree/` for directories) works after publication only if `<path>` exists in that source.
+    """
+    site_dir = Path(site_dir)
+    base = urlsplit(repository_url.rstrip("/") + "/")
+    pattern = re.compile(rf"^{re.escape(base.path)}(blob|tree)/{re.escape(branch)}/(.+?)/?$")
+    issues: list[Issue] = []
+    for path in sorted(site_dir.rglob("*.html")):
+        parser = _Page()
+        parser.feed(path.read_text(encoding="utf-8", errors="replace"))
+        rel = path.relative_to(site_dir).as_posix()
+        for href in parser.links:
+            parts = urlsplit(href)
+            if (parts.scheme, parts.netloc) != (base.scheme, base.netloc):
+                continue
+            match = pattern.match(parts.path)
+            if not match:
+                continue
+            kind, target = match.group(1), unquote(match.group(2))
+            if not _exists_exactly(source_root, target, directory=kind == "tree"):
+                issues.append(error("broken-repository-link", rel, f"{kind}/{branch}/{target} does not exist in the source ({href})"))
+    return issues

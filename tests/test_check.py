@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from conftest import write
-from teaching_hub.check import check_artifact, check_tracked_paths
+from teaching_hub.check import check_artifact, check_repository_links, check_tracked_paths
 
 PAGE = '<html lang="pl"><body>{}</body></html>'
 
@@ -126,3 +126,46 @@ def test_private_files_must_not_be_tracked():
     flagged = sorted(i.path for i in check_tracked_paths(tracked))
     assert flagged == [".claude/settings.json", "ARCHITECTURE.md", "docs/CLAUDE.md",
                        "drafts/pl/courses/x/task-sets/01-y.md", "notes.private.md"]
+
+
+# ---------------------------------------------------------------- links to the site's own repository
+
+SITE_REPO = "https://github.com/michalmaj/michalmaj.github.io"
+
+
+def test_links_to_files_of_the_site_repository_must_exist_in_the_source(tmp_path):
+    # e.g. the licensing page links LICENSE and LICENSE-CONTENT.md on GitHub: the published link only
+    # works if the deployed commit contains the file, so the file must be in the source being built.
+    source = tmp_path / "source"
+    write(source / "LICENSE", "MIT\n")
+    write(source / "docs/notes/a.md", "x\n")
+    site = make_site(tmp_path, {"licensing/index.html": "".join([
+        f'<a href="{SITE_REPO}/blob/main/LICENSE">ok</a>',
+        f'<a href="{SITE_REPO}/blob/main/LICENSE#L3">ok with fragment</a>',
+        f'<a href="{SITE_REPO}/tree/main/docs/notes">ok directory</a>',
+        f'<a href="{SITE_REPO}/blob/main/LICENSE-CONTENT.MD">typo</a>',
+        f'<a href="{SITE_REPO}/tree/main/missing">missing directory</a>',
+        f'<a href="{SITE_REPO}/blob/main/docs/notes">directory linked as a file</a>',
+        f'<a href="{SITE_REPO}/issues">not a file</a>',
+        '<a href="https://github.com/michalmaj/other-repository/blob/main/NOPE">another repository</a>',
+    ])})
+    issues = check_repository_links(site, SITE_REPO, source)
+    assert {i.code for i in issues} == {"broken-repository-link"}
+    assert sorted(i.message.split(" ")[0] for i in issues) == [
+        "blob/main/LICENSE-CONTENT.MD", "blob/main/docs/notes", "tree/main/missing",
+    ]
+
+
+def test_repository_links_to_other_branches_are_not_checked_against_the_source(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    site = make_site(tmp_path, {"index.html": f'<a href="{SITE_REPO}/blob/gh-pages/x.txt">x</a>'})
+    assert check_repository_links(site, SITE_REPO, source) == []
+
+
+def test_repository_links_are_case_sensitive_like_github(tmp_path):
+    # macOS and Windows file systems ignore case; GitHub does not.
+    source = tmp_path / "source"
+    write(source / "LICENSE-CONTENT.md", "x\n")
+    site = make_site(tmp_path, {"licensing/index.html": f'<a href="{SITE_REPO}/blob/main/LICENSE-CONTENT.MD">x</a>'})
+    assert [i.code for i in check_repository_links(site, SITE_REPO, source)] == ["broken-repository-link"]

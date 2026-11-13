@@ -207,6 +207,17 @@ def _check_url_registry(site: Site) -> list[Issue]:
     ]
 
 
+def check_registered_urls(site: Site) -> list[Issue]:
+    """Production only: every public URL must be in the registry, or its later removal would go unnoticed."""
+    registered = set(site.url_registry or [])
+    return [
+        error("url-not-registered", url, "public URL is not recorded in data/published-urls.txt; "
+              "run `teaching-hub urls --write` and commit the file")
+        for url in public_urls(site)
+        if url not in registered
+    ]
+
+
 def _check_course_visibility(site: Site) -> list[Issue]:
     """Published material of a course that cannot be shown in its language would silently disappear."""
     out = []
