@@ -13,6 +13,7 @@ from .check import (
     check_pages_present,
     check_repository_links,
     check_site_urls,
+    check_sitemap,
     check_tracked_paths,
     draft_markers,
 )
@@ -40,6 +41,7 @@ def _cmd_validate(args) -> int:
 def _production_checks(site, site_dir: Path) -> tuple[list[str], list]:
     """Extra forbidden strings and issues for a production artifact."""
     issues = check_site_urls(site_dir, site.settings["site_url"])
+    issues += check_sitemap(site_dir, site.settings["site_url"], public_urls(site))
     issues += check_registered_urls(site)
     if site.settings.get("repository_url"):
         issues += check_repository_links(site_dir, site.settings["repository_url"], site.root)

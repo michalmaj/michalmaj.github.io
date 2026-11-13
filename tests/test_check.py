@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from conftest import write
-from teaching_hub.check import check_anchor_aliases, check_artifact, check_repository_links, check_tracked_paths
+from teaching_hub.check import check_anchor_aliases, check_artifact, check_repository_links, check_sitemap, check_tracked_paths
 from teaching_hub.models import AnchorAlias
 
 PAGE = '<html lang="pl"><body>{}</body></html>'
@@ -183,3 +183,28 @@ def test_anchor_alias_needs_both_anchors_on_its_page(tmp_path):
     ]
     issues = check_anchor_aliases(site, aliases)
     assert sorted((i.code, i.path) for i in issues) == [("broken-anchor-alias", "/gone/"), ("broken-anchor-alias", "/licensing/")]
+
+
+SITE_URL = "https://michalmaj.github.io/"
+SITEMAP = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset>{}</urlset>\n'
+
+
+def test_sitemap_must_list_exactly_the_public_pages_and_be_named_in_robots_txt(tmp_path):
+    site = tmp_path / "_site"
+    write(site / "sitemap.xml", SITEMAP.format("<url><loc>https://michalmaj.github.io/</loc></url>"
+                                               "<url><loc>https://michalmaj.github.io/old/</loc></url>"))
+    write(site / "courses/sitemap.xml", SITEMAP.format("<url><loc>https://michalmaj.github.io/courses/</loc></url>"))
+    issues = check_sitemap(site, SITE_URL, ["/", "/courses/"])
+    messages = sorted(i.message for i in issues)
+    assert {i.code for i in issues} == {"sitemap"}
+    assert any("courses/sitemap.xml" in m for m in messages)  # one sitemap only
+    assert any("/old/" in m for m in messages) and any("/courses/" in m and "missing" in m for m in messages)
+    assert any("robots.txt" in m for m in messages)
+
+
+def test_a_complete_sitemap_named_in_robots_txt_passes(tmp_path):
+    site = tmp_path / "_site"
+    write(site / "sitemap.xml", SITEMAP.format("<url><loc>https://michalmaj.github.io/</loc></url>"
+                                               "<url><loc>https://michalmaj.github.io/courses/</loc></url>"))
+    write(site / "robots.txt", "User-agent: *\nDisallow:\n\nSitemap: https://michalmaj.github.io/sitemap.xml\n")
+    assert check_sitemap(site, SITE_URL, ["/", "/courses/"]) == []

@@ -235,3 +235,15 @@ def test_production_build_keeps_every_registered_anchor_alias(sample, tmp_path, 
     code = main(["build", "--production", *args, "--build-dir", str(tmp_path / "b"), "--site-dir", str(tmp_path / "_site")])
     assert code == 1
     assert "[broken-anchor-alias] /licensing/" in capsys.readouterr().out
+
+
+def test_production_checks_require_one_complete_sitemap(sample, tmp_path, capsys):
+    make_production_like(sample)
+    args = ["--source", str(sample), "--config-dir", str(sample / "renderer")]
+    assert main(["urls", *args, "--write"]) == 0
+    site_dir = tmp_path / "_site"
+    assert main(["build", "--production", *args, "--build-dir", str(tmp_path / "b"), "--site-dir", str(site_dir)]) == 0
+    (site_dir / "robots.txt").unlink()
+    capsys.readouterr()
+    assert main(["check", "--production", "--site-dir", str(site_dir), *args]) == 1
+    assert "[sitemap]" in capsys.readouterr().out

@@ -5,9 +5,10 @@ from pathlib import Path
 import pytest
 
 from conftest import write
-from teaching_hub.check import check_anchor_aliases, check_artifact
+from teaching_hub.check import check_anchor_aliases, check_artifact, check_sitemap
 from teaching_hub.loader import load_site
 from teaching_hub.render import RenderError, build_site
+from teaching_hub.urls import public_urls
 
 pytestmark = pytest.mark.renderer
 RENDERERS = ["zensical", "material"]
@@ -78,7 +79,10 @@ def test_root_404_is_bilingual_and_self_contained(sample, tmp_path):
     html = (site_dir / "404.html").read_text(encoding="utf-8")
     assert "Nie znaleziono strony" in html and "Page not found" in html
     assert 'href="/en/"' in html
-    assert "<link" not in html and "<script" not in html  # works at any depth
+    assert "<script" not in html and "stylesheet" not in html  # works at any depth
+    icons = re.findall(r'<link rel="icon" href="([^"]+)"', html)
+    assert icons == ["/assets/images/favicon.png"]  # absolute, so it also works at any depth
+    assert (site_dir / icons[0].lstrip("/")).is_file()
 
 
 def test_broken_internal_link_fails_the_build(sample, tmp_path):
@@ -114,3 +118,23 @@ def test_heading_ids_keep_polish_letters_and_published_anchors_still_lead_to_the
     assert check_anchor_aliases(site_dir, site.anchor_aliases) == []
     index = build_index(site_dir, "")
     assert "strona-glowna" in index and "th-anchor-alias" not in index and "strona-gowna" not in index
+
+
+@pytest.mark.parametrize("renderer", RENDERERS)
+def test_one_sitemap_lists_the_whole_site_and_robots_txt_points_to_it(sample, tmp_path, renderer):
+    site = load_site(sample)
+    site_dir = tmp_path / "_site"
+    build_site(site, tmp_path / "build", site_dir, renderer=renderer)
+    assert sorted(p.relative_to(site_dir).as_posix() for p in site_dir.rglob("sitemap*")) == ["sitemap.xml"]
+    locs = re.findall(r"<loc>([^<]+)</loc>", (site_dir / "sitemap.xml").read_text(encoding="utf-8"))
+    assert sorted(locs) == sorted("https://michalmaj.github.io" + u for u in public_urls(site))
+    assert "Sitemap: https://michalmaj.github.io/sitemap.xml" in (site_dir / "robots.txt").read_text(encoding="utf-8").splitlines()
+    assert check_sitemap(site_dir, site.settings["site_url"], public_urls(site)) == []
+
+
+@pytest.mark.parametrize("renderer", RENDERERS)
+def test_only_the_root_404_page_is_published(sample, tmp_path, renderer):
+    # GitHub Pages serves /404.html for every missing path; the builds' own 404 pages are never used.
+    site_dir = tmp_path / "_site"
+    build_site(load_site(sample), tmp_path / "build", site_dir, renderer=renderer)
+    assert sorted(p.relative_to(site_dir).as_posix() for p in site_dir.rglob("404.html")) == ["404.html"]
