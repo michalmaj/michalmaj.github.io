@@ -324,7 +324,8 @@ def test_pages_skips_deployment_before_the_first_publication(tmp_path):
     shutil.copytree(REPO / "data/i18n", root / "data/i18n")
     passed, log = run_pages_build(root, tmp_path)
     assert passed, log
-    assert "Deployment skipped" in log
+    status = next(line for line in log.splitlines() if line.startswith("not ready: "))
+    assert f"::notice title=Deployment skipped::{status}\n" in log  # the reason, as reported, nothing appended
     assert "Validate production content" not in log
 
 
