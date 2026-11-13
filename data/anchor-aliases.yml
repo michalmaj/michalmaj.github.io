@@ -1,0 +1,18 @@
+# Published heading anchors that changed. Each old anchor stays on its page as an alias of the
+# heading it pointed to, so links shared before the change keep working. Add an entry whenever a
+# published heading id changes; do not remove entries.
+#
+# 2026-11-13: heading ids keep "ł" as "l" (teaching_hub/slugs.py); before, "ł" was dropped.
+aliases:
+  - page: /
+    anchor: materiay-do-zajec
+    target: materialy-do-zajec
+  - page: /licensing/
+    anchor: materiay-osob-trzecich
+    target: materialy-osob-trzecich
+  - page: /courses/software-engineering/
+    anchor: wykorzystywane-materiay
+    target: wykorzystywane-materialy
+  - page: /courses/software-engineering/task-sets/i-am-a-developer/
+    anchor: materiay
+    target: materialy
