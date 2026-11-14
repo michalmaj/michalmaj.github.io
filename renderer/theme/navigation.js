@@ -11,6 +11,11 @@
 // are <label> elements without tabindex: keyboard users could not reach them. They become
 // focusable buttons that open with Enter or Space; the drawer button reports aria-expanded.
 //
+// While the drawer is closed it is only moved off screen, so Tab still walked through its links.
+// When the sidebar works as a drawer (narrow screens) and is closed, it is made inert: nothing in
+// it can be focused or read until it opens. Escape closes an open drawer, and focus that was in
+// the drawer returns to its button. On wide screens the sidebar is a column and stays as it is.
+//
 // The pipeline copies this file into every build and replaces the quoted placeholders with strings
 // from data/i18n: nav_section_toggle ("Podsekcje: {name}"), and nav_drawer_button and
 // search_button, used only when a header button has no text of its own (MkDocs Material).
@@ -77,6 +82,37 @@
     });
   }
 
+  function drawer() {
+    var input = document.getElementById("__drawer");
+    var sidebar = document.querySelector(".md-sidebar--primary");
+    var button = document.querySelector('label.md-header__button[for="__drawer"]');
+    if (!input || !sidebar) return;
+    // The theme turns the sidebar into a fixed, off-screen drawer below its breakpoint.
+    function isDrawer() {
+      return getComputedStyle(sidebar).position === "fixed";
+    }
+    function update() {
+      var closed = isDrawer() && !input.checked;
+      if (closed && sidebar.contains(document.activeElement) && button) button.focus();
+      if (closed) sidebar.setAttribute("inert", "");
+      else sidebar.removeAttribute("inert");
+    }
+    function close() {
+      input.checked = false;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      if (button) button.focus();
+    }
+    update();
+    input.addEventListener("change", update);
+    // The theme may also change the drawer without a change event (e.g. on clicks); check after them.
+    document.addEventListener("click", function () { setTimeout(update, 0); }, true);
+    window.addEventListener("resize", update);
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && input.checked && isDrawer()) close();
+    });
+  }
+
   document.querySelectorAll('label.md-nav__link[for^="__nav_"]').forEach(enhance);
   document.querySelectorAll('label.md-header__button[for="__drawer"], label.md-header__button[for="__search"]').forEach(headerButton);
+  drawer();
 })();

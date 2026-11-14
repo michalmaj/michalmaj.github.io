@@ -107,3 +107,36 @@ def test_search_finds_the_whole_language_from_any_page_by_keyboard(sample, tmp_p
         assert course["results"][0].startswith("/licensing/"), (view, course)
         assert english["results"] == [] or all(u.startswith("/en/") for u in english["results"]), (view, english)
         assert draft["results"] == [], (view, draft)
+
+
+def test_closed_navigation_drawer_is_out_of_the_keyboard_and_screen_reader_path(sample, tmp_path, served):
+    for renderer in ("zensical", "material"):
+        site_dir = tmp_path / renderer / "_site"
+        build_site(load_site(sample), tmp_path / renderer / "build", site_dir, renderer=renderer)
+        base = served(site_dir)
+        proc = subprocess.run(["node", str(SCRIPT), f"{base}/courses/sample-course-a/", CHROME, str(tmp_path / renderer / "profile")],
+                              capture_output=True, text=True, timeout=180)
+        assert proc.returncode == 0, proc.stderr
+        drawer = json.loads(proc.stdout)["drawer"]
+        for view in ("phone", "tablet"):
+            d = drawer[view]
+            # Closed: inert, reported as collapsed, and Tab never lands in it or off screen.
+            assert d["closed"]["open"] is False and d["closed"]["inert"] and d["closed"]["expanded"] == "false", (renderer, view, d["closed"])
+            assert not any(stop["inDrawer"] for stop in d["closedStops"]), (renderer, view, d["closedStops"])
+            assert all(stop["onScreen"] for stop in d["closedStops"]), (renderer, view, [s for s in d["closedStops"] if not s["onScreen"]])
+            # Enter opens it; its links are then reachable with Tab, on screen.
+            assert d["openedWithEnter"]["open"] and not d["openedWithEnter"]["inert"], (renderer, view, d["openedWithEnter"])
+            assert d["openedWithEnter"]["expanded"] == "true", (renderer, view, d["openedWithEnter"])
+            assert any(s["focusInDrawer"] and s["focusOnScreen"] for s in d["openStops"]), (renderer, view, d["openStops"])
+            # Escape closes it and focus, which was in the drawer, returns to the button that opened it.
+            assert d["focusBeforeEscape"]["focusInDrawer"], (renderer, view, d["focusBeforeEscape"])
+            after = d["afterEscape"]
+            assert not after["open"] and after["inert"] and after["expanded"] == "false" and after["focusOnButton"], (renderer, view, after)
+            # Space opens and closes it as well, focus staying on the button.
+            assert d["openedWithSpace"]["open"] and not d["openedWithSpace"]["inert"], (renderer, view, d["openedWithSpace"])
+            closed = d["closedWithSpace"]
+            assert not closed["open"] and closed["inert"] and closed["focusOnButton"], (renderer, view, closed)
+        # Wide screens: the sidebar is a column of the page, reachable and never inert.
+        assert drawer["resizedToDesktop"]["inert"] is False, (renderer, drawer["resizedToDesktop"])
+        assert drawer["desktop"]["state"]["inert"] is False, (renderer, drawer["desktop"])
+        assert any(stop["inDrawer"] and stop["onScreen"] for stop in drawer["desktop"]["stops"]), (renderer, drawer["desktop"])

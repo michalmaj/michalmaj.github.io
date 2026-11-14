@@ -56,6 +56,11 @@ const result = {};
 for (const view of [{ name: "desktop", width: 1280, height: 900, mobile: false }, { name: "phone", width: 390, height: 844, mobile: true }]) {
   await send("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height, deviceScaleFactor: 1, mobile: view.mobile });
   await open();
+  if (view.mobile) {
+    // On narrow screens the section toggles are in the navigation drawer: open it first, as a user would.
+    await evaluate(`document.querySelector('label.md-header__button[for="__drawer"]').click(), true`);
+    await sleep(400);
+  }
   const r = { initial: { ...(await ax()), ...(await state()) } };
   await evaluate(`${TOGGLE}.focus(), true`);
   await press(" ", "Space", 32, " ");
@@ -80,5 +85,59 @@ for (const view of [{ name: "desktop", width: 1280, height: 900, mobile: false }
   }
   result[view.name] = r;
 }
+
+// The navigation drawer on narrow screens: closed = nothing in it is reachable; open = reachable;
+// Escape closes it and focus goes back to its button; wide screens keep the sidebar reachable.
+const SIDEBAR = `document.querySelector('.md-sidebar--primary')`;
+const BUTTON = `document.querySelector('label.md-header__button[for="__drawer"]')`;
+const drawer = () => evaluate(`(() => { const a = document.activeElement; const r = a.getBoundingClientRect();
+  return { open: document.getElementById('__drawer').checked, inert: ${SIDEBAR}.hasAttribute('inert'),
+           expanded: ${BUTTON} ? ${BUTTON}.getAttribute('aria-expanded') : null,
+           focusOnButton: a === ${BUTTON}, focusInDrawer: ${SIDEBAR}.contains(a),
+           focusOnScreen: r.left >= 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight }; })()`);
+async function tabStops(count) {
+  // Tab from the top of the page; record where focus goes.
+  await evaluate("document.activeElement && document.activeElement.blur(), window.scrollTo(0, 0), true");
+  const stops = [];
+  for (let i = 0; i < count; i++) {
+    await press("Tab", "Tab", 9);
+    stops.push(await evaluate(`(() => { const a = document.activeElement; const r = a.getBoundingClientRect();
+      return { inDrawer: ${SIDEBAR}.contains(a), onScreen: r.left >= 0 && r.left < innerWidth,  // off-canvas drawer items sit at negative x
+               name: (a.getAttribute('aria-label') || a.textContent || '').trim().slice(0, 30) }; })()`));
+  }
+  return stops;
+}
+const drawerResult = {};
+for (const view of [{ name: "phone", width: 390, height: 844, mobile: true }, { name: "tablet", width: 1000, height: 800, mobile: false }]) {
+  await send("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height, deviceScaleFactor: 1, mobile: view.mobile });
+  await open();
+  const d = { closed: await drawer(), closedStops: await tabStops(30) };
+  await evaluate(`${BUTTON}.focus(), true`);
+  await press("Enter", "Enter", 13, "\r"); await sleep(300);
+  d.openedWithEnter = await drawer();
+  d.openStops = [];
+  for (let i = 0; i < 10; i++) {
+    await press("Tab", "Tab", 9);
+    d.openStops.push({ ...(await drawer()), name: await evaluate("(document.activeElement.getAttribute('aria-label') || document.activeElement.textContent || '').trim().slice(0, 30)") });
+  }
+  await evaluate(`(() => { const l = [...${SIDEBAR}.querySelectorAll('a[href]')].find(e => e.getClientRects().length); if (l) l.focus(); return true; })()`);
+  d.focusBeforeEscape = await drawer();
+  await press("Escape", "Escape", 27); await sleep(300);
+  d.afterEscape = await drawer();
+  await press(" ", "Space", 32, " "); await sleep(300);
+  d.openedWithSpace = await drawer();
+  await press(" ", "Space", 32, " "); await sleep(300);
+  d.closedWithSpace = await drawer();
+  drawerResult[view.name] = d;
+}
+// Wide screen: the sidebar is a normal column, never inert; growing a narrow window releases it.
+await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+await open();
+await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+await sleep(400);
+drawerResult.resizedToDesktop = await drawer();
+await open();
+drawerResult.desktop = { state: await drawer(), stops: await tabStops(8) };
+result.drawer = drawerResult;
 console.log(JSON.stringify(result));
 ws.close(); chrome.kill(); process.exit(0);
