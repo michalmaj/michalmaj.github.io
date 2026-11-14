@@ -8,6 +8,7 @@ repositories:
     technologies: [Python, Go, Java]
     content_languages: [en, pl]
     licenses: {code: MIT, content: CC-BY-4.0}
+    issue_templates: true
   - id: mechatronic-systems-programming
     name: Programowanie systemów mechatronicznych
     url: https://github.com/michalmaj/mechatronic-systems-programming
@@ -16,6 +17,7 @@ repositories:
     technologies: [C++20, CMake, CTest]
     content_languages: [pl, en]
     licenses: {code: MIT, content: MIT}
+    issue_templates: true
   - id: deep-learning
     name: Deep Learning
     url: https://github.com/michalmaj/deep-learning
@@ -32,3 +34,4 @@ repositories:
     technologies: [Markdown]
     content_languages: [en]
     licenses: {code: MIT, content: CC-BY-SA-4.0}
+    issue_templates: true

@@ -268,3 +268,18 @@ def test_navigation_script_finds_the_header_buttons_it_makes_focusable(sample, t
     assert {"__drawer", "__search"} <= targets
     assert {"__drawer", "__search"} <= page.checkboxes
     assert page.primary_sidebars == 1  # the drawer the script makes inert while it is closed
+
+
+@pytest.mark.parametrize("renderer", RENDERERS)
+def test_repository_catalog_is_a_page_of_the_course_space(sample, tmp_path, renderer):
+    write(sample / "content/pl/courses/repositories.md", "## Pomóż rozwijać materiały\n\nTekst zastępczy sekcji opinii.\n")
+    site = load_site(sample)
+    site_dir = tmp_path / "_site"
+    build_site(site, tmp_path / "build", site_dir, renderer=renderer)
+    html = (site_dir / "courses/repositories/index.html").read_text(encoding="utf-8")
+    assert "Software Engineering in Practice" in html and "Pomóż rozwijać materiały" in html
+    assert 'href="../sample-course-a/"' in html  # a published course that uses a repository
+    catalogue = (site_dir / "courses/index.html").read_text(encoding="utf-8")
+    assert re.search(r'href="(\./)?repositories/"[^>]*>.{0,200}?Repozytoria', catalogue, re.S)  # in the navigation
+    assert check_artifact(site_dir) == []
+    assert "Python Dev Setup for Beginners" in build_index(site_dir, "")  # searchable from the home page

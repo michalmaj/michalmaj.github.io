@@ -1,11 +1,117 @@
-# Repositories referenced by published materials. Facts checked against each repository's
-# default branch on 2026-11-13.
+# Teaching repositories shown in the repository catalog (/courses/repositories/) and referenced by
+# published materials. Facts checked against each repository's default branch on 2026-11-14:
+# technologies (pyproject.toml, CMakeLists.txt, README), material languages, license files, and
+# issue templates (.github/ISSUE_TEMPLATE/). A repository with a single MIT LICENSE for the whole
+# project is recorded as MIT for code and content.
 repositories:
   - id: software-engineering-in-practice
     name: Software Engineering in Practice
     url: https://github.com/michalmaj/software-engineering-in-practice
     default_branch: main
     maturity: not_assessed
+    description:
+      pl: "Dwujęzyczny kurs laboratoryjny inżynierii oprogramowania: od terminala i Gita, przez testy, projektowanie i CI, po API, wydania, incydenty i przekazanie projektu. Ścieżki: Python, Go i Java."
     technologies: [Python, Go, Java]
     content_languages: [en, pl]
     licenses: {code: MIT, content: CC-BY-4.0}
+    issue_templates: true
+  - id: mechatronic-systems-programming
+    name: Programowanie systemów mechatronicznych
+    url: https://github.com/michalmaj/mechatronic-systems-programming
+    default_branch: main
+    maturity: not_assessed
+    description:
+      pl: "Praktyczny kurs C++ dla mechatroniki: budowa symulatora przemysłowej celi sortującej w kolejnych misjach z testami, punktami kontrolnymi w Gicie, obsługą awarii, czujnikami, maszynami stanów i projektem końcowym."
+    technologies: [C++20, CMake, CTest]
+    content_languages: [pl, en]
+    licenses: {code: MIT, content: MIT}
+    issue_templates: true
+  - id: data-science-casebook
+    name: data-science-casebook
+    url: https://github.com/michalmaj/data-science-casebook
+    default_branch: main
+    maturity: not_assessed
+    description:
+      pl: "Dwujęzyczny kurs data science oparty na realistycznych studiach przypadków: od pytań biznesowych i modeli bazowych po ewaluację, interpretację i rekomendacje."
+    technologies: [Python, pandas, scikit-learn, Jupyter]
+    content_languages: [en, pl]
+    licenses: {code: MIT, content: MIT}
+    issue_templates: true
+  - id: data-science-arcade
+    name: data-science-arcade
+    url: https://github.com/michalmaj/data-science-arcade
+    default_branch: main
+    maturity: not_assessed
+    description:
+      pl: "Dwujęzyczna gra-kurs praktycznego data science na komputer: lekcje z informacją zwrotną, odpowiedniki w Pythonie i końcowe dochodzenie."
+    technologies: [Python, Pygame, pandas, NumPy]
+    content_languages: [en, pl]
+    licenses: {code: MIT, content: CC-BY-SA-4.0}
+    issue_templates: true
+  - id: cognitive-data-arcade
+    name: Cognitive Data Arcade
+    url: https://github.com/michalmaj/cognitive-data-arcade
+    default_branch: main
+    maturity: not_assessed
+    description:
+      pl: "Interaktywne mini-gry do nauki kognitywnej analizy danych: pomiar czasu reakcji, statystyka, uczenie maszynowe, NLP i efekty sieciowe."
+    technologies: [Python, Pygame, pandas, scikit-learn]
+    content_languages: [en, pl]
+    licenses: {code: MIT, content: CC-BY-4.0}
+    issue_templates: true
+  - id: python-rpg-questbook
+    name: Python RPG Questbook
+    url: https://github.com/michalmaj/python-rpg-questbook
+    default_branch: main
+    maturity: not_assessed
+    description:
+      pl: "Kurs Pythona oparty na projekcie: terminalowa gra RPG rozwijana od pierwszych skryptów do przetestowanej aplikacji CLI, aplikacji FastAPI i systemu zadań współbieżnych."
+    technologies: [Python, Typer, FastAPI]
+    content_languages: [en]
+    licenses: {code: MIT, content: MIT}
+    issue_templates: true
+  - id: modern-python-project-guide
+    name: Modern Python Project Guide
+    url: https://github.com/michalmaj/modern-python-project-guide
+    default_branch: main
+    maturity: not_assessed
+    description:
+      pl: "Przewodnik po nowoczesnych projektach w Pythonie: uv, pytest, Ruff, mypy, MkDocs, GitHub Actions i GitHub Pages."
+    technologies: [Python, uv, pytest, Ruff, mypy, MkDocs]
+    content_languages: [en]
+    licenses: {code: MIT, content: MIT}
+    documentation_url: https://michalmaj.github.io/modern-python-project-guide/
+    issue_templates: true
+  - id: python-dev-setup-for-beginners
+    name: Python Dev Setup for Beginners
+    url: https://github.com/michalmaj/python-dev-setup-for-beginners
+    default_branch: main
+    maturity: not_assessed
+    description:
+      pl: "Przewodniki krok po kroku: konfiguracja Gita, GitHuba, VS Code, uv i pierwszego projektu w Pythonie na Windows, Linuksie i macOS."
+    technologies: [Git, GitHub, VS Code, uv, Python]
+    content_languages: [en]
+    licenses: {code: MIT, content: CC-BY-SA-4.0}
+    issue_templates: true
+  - id: interactive-ml-labs
+    name: Interactive ML Labs
+    url: https://github.com/michalmaj/interactive-ml-labs
+    default_branch: main
+    maturity: not_assessed
+    description:
+      pl: "Interaktywne, wizualne laboratoria uczenia maszynowego z prowadzonymi lekcjami, zadaniami i śledzeniem postępów."
+    technologies: [Python, Pygame]
+    content_languages: [en, pl]
+    licenses: {code: MIT, content: MIT}
+    issue_templates: true
+  - id: deep-learning
+    name: Deep Learning
+    url: https://github.com/michalmaj/deep-learning
+    default_branch: main
+    maturity: in_development
+    description:
+      pl: "Praktyczny, oparty na kodzie przewodnik po deep learningu z użyciem PyTorcha: wykłady od intuicji do matematyki i kodu oraz laboratoria z notebookami do samodzielnego dokończenia."
+    technologies: [Python, PyTorch, Jupyter]
+    content_languages: [pl, en]
+    licenses: {code: MIT, content: CC-BY-SA-4.0}
+    issue_templates: false

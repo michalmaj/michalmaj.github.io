@@ -19,7 +19,7 @@ SPDX_ALLOWED = frozenset(
 
 # Course ids become URL segments under /courses/; these collide with pipeline
 # pages or renderer output directories.
-RESERVED_COURSE_IDS = frozenset({"how-to-use", "assets", "search", "stylesheets", "javascripts", "404"})
+RESERVED_COURSE_IDS = frozenset({"how-to-use", "repositories", "assets", "search", "stylesheets", "javascripts", "404"})
 # Top-level URL segments owned by the site.
 RESERVED_TOP_LEVEL = frozenset({"courses", "for-employers", "en", "licensing", "assets", "search"})
 
@@ -60,6 +60,8 @@ class Repository(Strict):
     licenses: Licenses | None = None
     documentation_url: str | None = None
     demo_url: str | None = None
+    # The repository has issue templates or forms: "Report a problem" opens the template chooser.
+    issue_templates: bool = False
 
 
 class RepoMaterial(Strict):

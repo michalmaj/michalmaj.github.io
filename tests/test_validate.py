@@ -265,3 +265,14 @@ def test_anchor_aliases_need_a_public_page_and_a_new_anchor(sample):
     assert sorted(i.path for i in issues) == [
         "data/anchor-aliases.yml[0]", "data/anchor-aliases.yml[1]", "data/anchor-aliases.yml[3]",
     ]
+
+
+def test_repository_catalog_page_is_markdown_only(sample):
+    write(sample / "content/pl/courses/repositories.md", "---\ntitle: x\n---\nTekst.\n")
+    assert "schema" in error_codes(validate(load_site(sample)))
+
+
+def test_repositories_is_a_reserved_course_id(sample):
+    text = (sample / "data/courses.yml").read_text(encoding="utf-8")
+    write(sample / "data/courses.yml", text + '  - id: repositories\n    name:\n      pl: "X"\n')
+    assert "reserved-name" in error_codes(validate(load_site(sample)))

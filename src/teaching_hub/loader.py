@@ -23,7 +23,8 @@ from .models import (
 )
 
 DocKind = Literal[
-    "home", "licensing", "catalog_index", "how_to_use", "course_index", "task_set", "guide", "employers"
+    "home", "licensing", "catalog_index", "how_to_use", "repositories_index", "course_index", "task_set", "guide",
+    "employers",
 ]
 
 _LANG = "(?P<lang>" + "|".join(LANGS) + ")"
@@ -32,6 +33,7 @@ _PATTERNS: list[tuple[DocKind, re.Pattern[str]]] = [
     ("licensing", re.compile(rf"^{_LANG}/home/licensing\.md$")),
     ("catalog_index", re.compile(rf"^{_LANG}/courses/index\.md$")),
     ("how_to_use", re.compile(rf"^{_LANG}/courses/how-to-use\.md$")),
+    ("repositories_index", re.compile(rf"^{_LANG}/courses/repositories\.md$")),
     ("course_index", re.compile(rf"^{_LANG}/courses/(?P<course>[^/]+)/index\.md$")),
     ("task_set", re.compile(rf"^{_LANG}/courses/(?P<course>[^/]+)/task-sets/(?P<name>[^/]+)\.md$")),
     ("guide", re.compile(rf"^{_LANG}/courses/(?P<course>[^/]+)/guides/(?P<name>[^/]+)\.md$")),

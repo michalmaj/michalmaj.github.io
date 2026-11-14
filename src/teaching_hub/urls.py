@@ -79,6 +79,11 @@ def doc_url(doc: Doc) -> str | None:
     return None
 
 
+def has_repository_catalog(site: Site, lang: str) -> bool:
+    """The repository catalog exists in a language with its page text and at least one registered repository."""
+    return bool(site.repositories) and site.find("repositories_index", lang) is not None
+
+
 def public_urls(site: Site) -> list[str]:
     """Every URL the public build produces (published and archived pages)."""
     urls: list[str] = []
@@ -91,6 +96,8 @@ def public_urls(site: Site) -> list[str]:
             urls.append(space_root(lang, "courses"))
             if site.find("how_to_use", lang):
                 urls.append(f"{lang_prefix(lang)}/courses/how-to-use/")
+            if has_repository_catalog(site, lang):
+                urls.append(f"{lang_prefix(lang)}/courses/repositories/")
             for course_id in visible_courses(site, lang):
                 urls.append(f"{lang_prefix(lang)}/courses/{course_id}/")
                 for kind in ("task_set", "guide"):
