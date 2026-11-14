@@ -121,6 +121,7 @@ def test_code_and_interface_strings_alone_are_not_production_content(tmp_path):
         "data/repositories.yml",
         "data/third-party.yml",
         "data/published-urls.txt",
+        "data/anchor-aliases.yml",
         "assets/diagram.svg",
     ],
 )
@@ -222,3 +223,27 @@ def test_production_build_checks_links_to_files_of_the_site_repository(sample, t
     assert "[broken-repository-link]" in out and "LICENSE-CONTENT.md" in out and "blob/main/LICENSE " not in out
     write(sample / "LICENSE-CONTENT.md", "# Teaching Content License\n")
     assert main(["check", "--production", "--site-dir", str(site_dir), *args]) == 0
+
+
+def test_production_build_keeps_every_registered_anchor_alias(sample, tmp_path, capsys):
+    # A published anchor whose heading was renamed again would silently stop working.
+    make_production_like(sample)
+    args = ["--source", str(sample), "--config-dir", str(sample / "renderer")]
+    assert main(["urls", *args, "--write"]) == 0
+    write(sample / "data/anchor-aliases.yml", "aliases:\n  - {page: /licensing/, anchor: stara, target: nie-ma-takiego-naglowka}\n")
+    capsys.readouterr()
+    code = main(["build", "--production", *args, "--build-dir", str(tmp_path / "b"), "--site-dir", str(tmp_path / "_site")])
+    assert code == 1
+    assert "[broken-anchor-alias] /licensing/" in capsys.readouterr().out
+
+
+def test_production_checks_require_one_complete_sitemap(sample, tmp_path, capsys):
+    make_production_like(sample)
+    args = ["--source", str(sample), "--config-dir", str(sample / "renderer")]
+    assert main(["urls", *args, "--write"]) == 0
+    site_dir = tmp_path / "_site"
+    assert main(["build", "--production", *args, "--build-dir", str(tmp_path / "b"), "--site-dir", str(site_dir)]) == 0
+    (site_dir / "robots.txt").unlink()
+    capsys.readouterr()
+    assert main(["check", "--production", "--site-dir", str(site_dir), *args]) == 1
+    assert "[sitemap]" in capsys.readouterr().out

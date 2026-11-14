@@ -13,6 +13,7 @@ from .mdtools import FrontMatterError, split_front_matter
 from .models import (
     LANGS,
     SLUG_RE,
+    AnchorAlias,
     Course,
     GuideMeta,
     Repository,
@@ -72,6 +73,7 @@ class Site:
     docs: list[Doc]
     url_registry: list[str] | None
     issues: list[Issue] = field(default_factory=list)
+    anchor_aliases: list[AnchorAlias] = field(default_factory=list)
 
     def by_kind(self, kind: DocKind, lang: str | None = None, course: str | None = None) -> list[Doc]:
         return [
@@ -191,6 +193,8 @@ def _load_content(content_root: Path, root: Path, issues: list[Issue], draft: bo
 
 
 REQUIRED_SPACES = ("home", "courses", "for-employers")
+# Published heading anchors that changed, kept as aliases (slugs.py).
+ANCHOR_ALIASES = "data/anchor-aliases.yml"
 
 
 def load_site(root: Path, drafts: Path | None = None, config_dir: Path | None = None) -> Site:
@@ -230,6 +234,9 @@ def load_site(root: Path, drafts: Path | None = None, config_dir: Path | None = 
     tp_raw = _read_yaml(root / "data/third-party.yml", "data/third-party.yml", issues, {}).get("items", [])
     third_party = _model_list(tp_raw, ThirdPartyItem, "data/third-party.yml", issues)
 
+    aliases_raw = _read_yaml(root / ANCHOR_ALIASES, ANCHOR_ALIASES, issues, {}).get("aliases", [])
+    anchor_aliases = _model_list(aliases_raw, AnchorAlias, ANCHOR_ALIASES, issues)
+
     registry_path = root / "data/published-urls.txt"
     registry = None
     if registry_path.exists():
@@ -242,4 +249,5 @@ def load_site(root: Path, drafts: Path | None = None, config_dir: Path | None = 
         replaced = {(d.kind, d.lang, d.course_id, d.slug) for d in overlay}
         docs = [d for d in docs if (d.kind, d.lang, d.course_id, d.slug) not in replaced] + overlay
 
-    return Site(root, config_dir, settings, spaces, courses, repositories, i18n, third_party, docs, registry, issues)
+    return Site(root, config_dir, settings, spaces, courses, repositories, i18n, third_party, docs, registry, issues,
+                anchor_aliases)

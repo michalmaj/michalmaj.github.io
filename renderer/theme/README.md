@@ -9,6 +9,12 @@ variables and class names.
 - `theme.css`: maps the tokens onto the renderer theme and styles the components.
 - `space-<space>.css` (optional): overrides for one space only, for example a
   different accent. It is linked only in that space's builds.
+- `navigation.js`: makes the navigation's section toggles accessible: each becomes a
+  button named after its section (`nav_section_toggle` in `data/i18n`), with
+  `aria-expanded` and `aria-controls`, and Space works like Enter. The pipeline copies
+  it into every build with the string in the build's language. `tests/test_render.py`
+  checks the theme markup it relies on, and `tests/test_browser.py` (opt-in, needs
+  Chrome) checks the behaviour.
 
 Direction: modern editorial / technology. The design uses a warm neutral page, dark
 type, one restrained teal accent, thin borders instead of shadows, a serif display

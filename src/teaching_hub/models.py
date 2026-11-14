@@ -114,6 +114,14 @@ class ThirdPartyItem(Strict):
     changes: str | None = None
 
 
+class AnchorAlias(Strict):
+    """A published heading anchor that changed: `anchor` keeps leading to the heading `target`."""
+
+    page: str  # public URL of the page, e.g. /licensing/
+    anchor: str
+    target: str
+
+
 class SpaceConfig(Strict):
     enabled: bool
     path: str

@@ -22,7 +22,10 @@ default-groups = ["dev", "zensical", "material"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["renderer: runs a real renderer build (slower)"]
+markers = [
+    "renderer: runs a real renderer build (slower)",
+    "browser: drives a real browser (opt-in: TEACHING_HUB_CHROME)",
+]
 
 [build-system]
 requires = ["uv_build>=0.11,<0.12"]

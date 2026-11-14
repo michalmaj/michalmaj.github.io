@@ -1,12 +1,14 @@
 """Run a renderer for each build and compose one artifact."""
 
 import html
+import re
 import shutil
 import subprocess
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from .assemble import Build, assemble
 from .i18n import t
@@ -48,7 +50,7 @@ def render(builds: list[Build], renderer: str) -> list[RenderResult]:
     return results
 
 
-def not_found_page(site: Site) -> str:
+def not_found_page(site: Site, icon: str | None = None) -> str:
     sections = []
     for lang in ("pl", "en"):
         home = "/" if lang == "pl" or not space_has_content(site, "home", "en") else "/en/"
@@ -66,10 +68,35 @@ def not_found_page(site: Site) -> str:
     return (
         '<!doctype html>\n<html lang="pl">\n<head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
-        f"<title>404</title><style>{style}</style></head>\n<body><main>\n"
+        f"<title>404</title>{f'<link rel="icon" href="{html.escape(icon)}">' if icon else ''}"
+        f"<style>{style}</style></head>\n<body><main>\n"
         + "\n".join(sections)
         + "\n</main></body>\n</html>\n"
     )
+
+
+_URL_ENTRY = re.compile(r"<url>.*?</url>", re.S)
+FAVICON = "assets/images/favicon.png"
+
+
+def _merge_sitemaps(site: Site, builds: list[Build], site_dir: Path) -> None:
+    """One sitemap for the whole site at the root, named in robots.txt.
+
+    Every build writes its own sitemap.xml (and Material a .gz copy); search engines look for
+    /sitemap.xml, so the entries of all builds are merged there and the per-build files removed.
+    """
+    entries: list[str] = []
+    for build in sorted(builds, key=lambda b: len(b.prefix)):
+        path = site_dir / build.prefix.strip("/") / "sitemap.xml"
+        if path.is_file():
+            entries += [entry.strip() for entry in _URL_ENTRY.findall(path.read_text(encoding="utf-8"))]
+    for path in [*site_dir.rglob("sitemap.xml"), *site_dir.rglob("sitemap.xml.gz")]:
+        path.unlink()
+    (site_dir / "sitemap.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "".join(f"  {entry}\n" for entry in entries) + "</urlset>\n", encoding="utf-8")
+    site_url = site.settings["site_url"].rstrip("/") + "/"
+    (site_dir / "robots.txt").write_text(f"User-agent: *\nDisallow:\n\nSitemap: {site_url}sitemap.xml\n", encoding="utf-8")
 
 
 def compose(site: Site, builds: list[Build], site_dir: Path) -> None:
@@ -78,8 +105,14 @@ def compose(site: Site, builds: list[Build], site_dir: Path) -> None:
         shutil.rmtree(site_dir)
     site_dir.mkdir(parents=True)
     for build in sorted(builds, key=lambda b: len(b.prefix)):
-        shutil.copytree(build.site_dir, site_dir / build.prefix.strip("/"), dirs_exist_ok=True)
-    (site_dir / "404.html").write_text(not_found_page(site), encoding="utf-8")
+        target = site_dir / build.prefix.strip("/")
+        shutil.copytree(build.site_dir, target, dirs_exist_ok=True)
+        if build.prefix.strip("/"):
+            (target / "404.html").unlink(missing_ok=True)  # GitHub Pages serves only /404.html
+    _merge_sitemaps(site, builds, site_dir)
+    # An absolute icon URL keeps the 404 page self-contained at any depth of a missing path.
+    icon = urlsplit(site.settings["site_url"]).path.rstrip("/") + "/" + FAVICON if (site_dir / FAVICON).is_file() else None
+    (site_dir / "404.html").write_text(not_found_page(site, icon), encoding="utf-8")
 
 
 def build_site(

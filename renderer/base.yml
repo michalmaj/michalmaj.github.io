@@ -14,6 +14,10 @@ theme:
 extra_css:
   - stylesheets/teaching-hub/tokens.css
   - stylesheets/teaching-hub/theme.css
+# Accessible names, state and keyboard support for the navigation's section toggles
+# (renderer/theme/navigation.js, copied into every build with its strings from data/i18n).
+extra_javascript:
+  - javascripts/teaching-hub/navigation.js
 extra:
   generator: false
   # One storage scope for every build (/, /courses/, /en/, …), so a colour scheme chosen

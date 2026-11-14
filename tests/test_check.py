@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from conftest import write
-from teaching_hub.check import check_artifact, check_repository_links, check_tracked_paths
+from teaching_hub.check import check_anchor_aliases, check_artifact, check_repository_links, check_sitemap, check_tracked_paths
+from teaching_hub.models import AnchorAlias
 
 PAGE = '<html lang="pl"><body>{}</body></html>'
 
@@ -169,3 +170,41 @@ def test_repository_links_are_case_sensitive_like_github(tmp_path):
     write(source / "LICENSE-CONTENT.md", "x\n")
     site = make_site(tmp_path, {"licensing/index.html": f'<a href="{SITE_REPO}/blob/main/LICENSE-CONTENT.MD">x</a>'})
     assert [i.code for i in check_repository_links(site, SITE_REPO, source)] == ["broken-repository-link"]
+
+
+def test_anchor_alias_needs_both_anchors_on_its_page(tmp_path):
+    site = tmp_path / "_site"
+    write(site / "index.html", '<h1 id="new"><span id="old" class="th-anchor-alias"></span>Tytuł</h1>')
+    write(site / "licensing/index.html", '<h2 id="new2">Tytuł</h2>')
+    aliases = [
+        AnchorAlias(page="/", anchor="old", target="new"),
+        AnchorAlias(page="/licensing/", anchor="old2", target="new2"),
+        AnchorAlias(page="/gone/", anchor="a", target="b"),
+    ]
+    issues = check_anchor_aliases(site, aliases)
+    assert sorted((i.code, i.path) for i in issues) == [("broken-anchor-alias", "/gone/"), ("broken-anchor-alias", "/licensing/")]
+
+
+SITE_URL = "https://michalmaj.github.io/"
+SITEMAP = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset>{}</urlset>\n'
+
+
+def test_sitemap_must_list_exactly_the_public_pages_and_be_named_in_robots_txt(tmp_path):
+    site = tmp_path / "_site"
+    write(site / "sitemap.xml", SITEMAP.format("<url><loc>https://michalmaj.github.io/</loc></url>"
+                                               "<url><loc>https://michalmaj.github.io/old/</loc></url>"))
+    write(site / "courses/sitemap.xml", SITEMAP.format("<url><loc>https://michalmaj.github.io/courses/</loc></url>"))
+    issues = check_sitemap(site, SITE_URL, ["/", "/courses/"])
+    messages = sorted(i.message for i in issues)
+    assert {i.code for i in issues} == {"sitemap"}
+    assert any("courses/sitemap.xml" in m for m in messages)  # one sitemap only
+    assert any("/old/" in m for m in messages) and any("/courses/" in m and "missing" in m for m in messages)
+    assert any("robots.txt" in m for m in messages)
+
+
+def test_a_complete_sitemap_named_in_robots_txt_passes(tmp_path):
+    site = tmp_path / "_site"
+    write(site / "sitemap.xml", SITEMAP.format("<url><loc>https://michalmaj.github.io/</loc></url>"
+                                               "<url><loc>https://michalmaj.github.io/courses/</loc></url>"))
+    write(site / "robots.txt", "User-agent: *\nDisallow:\n\nSitemap: https://michalmaj.github.io/sitemap.xml\n")
+    assert check_sitemap(site, SITE_URL, ["/", "/courses/"]) == []

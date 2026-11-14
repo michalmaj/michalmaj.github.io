@@ -250,3 +250,50 @@ def check_repository_links(site_dir: Path, repository_url: str, source_root: Pat
             if not _exists_exactly(source_root, target, directory=kind == "tree"):
                 issues.append(error("broken-repository-link", rel, f"{kind}/{branch}/{target} does not exist in the source ({href})"))
     return issues
+
+
+def check_anchor_aliases(site_dir: Path, aliases) -> list[Issue]:
+    """Each published anchor that changed must still exist on its page, next to its target heading."""
+    site_dir = Path(site_dir)
+    issues: list[Issue] = []
+    for alias in aliases:
+        target = _target_file(site_dir, alias.page)
+        ids: set[str] = set()
+        if target is not None:
+            page = _Page()
+            page.feed(target.read_text(encoding="utf-8", errors="replace"))
+            ids = page.ids
+        missing = [a for a in (alias.anchor, alias.target) if a not in ids]
+        if missing:
+            issues.append(error("broken-anchor-alias", alias.page,
+                                f"#{alias.anchor} → #{alias.target}: {', '.join('#' + m for m in missing)} not on the page "
+                                "(see data/anchor-aliases.yml)"))
+    return issues
+
+
+def check_sitemap(site_dir: Path, site_url: str, urls) -> list[Issue]:
+    """One sitemap at the root lists exactly the public pages, and robots.txt names it."""
+    site_dir = Path(site_dir)
+    site_url = site_url.rstrip("/") + "/"
+    issues: list[Issue] = []
+    root = site_dir / "sitemap.xml"
+    for path in sorted([*site_dir.rglob("sitemap*.xml"), *site_dir.rglob("sitemap*.xml.gz")]):
+        if path != root:
+            rel = path.relative_to(site_dir).as_posix()
+            issues.append(error("sitemap", rel, f"only /sitemap.xml may exist; {rel} is a second sitemap"))
+    if not root.is_file():
+        issues.append(error("sitemap", "sitemap.xml", "the site has no /sitemap.xml"))
+    else:
+        locs = _LOC_RE.findall(root.read_text(encoding="utf-8", errors="replace"))
+        expected = {site_url.rstrip("/") + url for url in urls}
+        for loc in sorted(set(locs) - expected):
+            issues.append(error("sitemap", "sitemap.xml", f"lists {loc}, which is not a public page"))
+        for loc in sorted(expected - set(locs)):
+            issues.append(error("sitemap", "sitemap.xml", f"public page {loc} is missing"))
+        for loc in sorted({loc for loc in locs if locs.count(loc) > 1}):
+            issues.append(error("sitemap", "sitemap.xml", f"lists {loc} more than once"))
+    robots = site_dir / "robots.txt"
+    line = f"Sitemap: {site_url}sitemap.xml"
+    if not robots.is_file() or line not in robots.read_text(encoding="utf-8", errors="replace").splitlines():
+        issues.append(error("sitemap", "robots.txt", f"robots.txt must contain the line {line!r}"))
+    return issues

@@ -8,10 +8,12 @@ from pathlib import Path
 
 from .assemble import PreviewNotAllowed
 from .check import (
+    check_anchor_aliases,
     check_artifact,
     check_pages_present,
     check_repository_links,
     check_site_urls,
+    check_sitemap,
     check_tracked_paths,
     draft_markers,
 )
@@ -39,6 +41,7 @@ def _cmd_validate(args) -> int:
 def _production_checks(site, site_dir: Path) -> tuple[list[str], list]:
     """Extra forbidden strings and issues for a production artifact."""
     issues = check_site_urls(site_dir, site.settings["site_url"])
+    issues += check_sitemap(site_dir, site.settings["site_url"], public_urls(site))
     issues += check_registered_urls(site)
     if site.settings.get("repository_url"):
         issues += check_repository_links(site_dir, site.settings["repository_url"], site.root)
@@ -67,7 +70,7 @@ def _cmd_build(args) -> int:
     # Outside a draft preview, the draft banner must never reach the artifact.
     forbidden = [] if args.drafts is not None else draft_markers(site)
     site_dir = Path(args.site_dir)
-    issues = check_pages_present(site_dir, public_urls(site))
+    issues = check_pages_present(site_dir, public_urls(site)) + check_anchor_aliases(site_dir, site.anchor_aliases)
     if args.production:
         extra, url_issues = _production_checks(site, site_dir)
         forbidden += extra
@@ -85,7 +88,7 @@ def _cmd_check(args) -> int:
     if args.source is not None:
         site = load_site(Path(args.source), config_dir=Path(args.config_dir))
         forbidden += draft_markers(site)
-        issues += check_pages_present(site_dir, public_urls(site))
+        issues += check_pages_present(site_dir, public_urls(site)) + check_anchor_aliases(site_dir, site.anchor_aliases)
         if args.production:
             extra, url_issues = _production_checks(site, site_dir)
             forbidden += extra

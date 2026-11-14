@@ -40,6 +40,7 @@ def validate(site: Site) -> list[Issue]:
     issues += _check_translations(site)
     issues += _check_url_registry(site)
     issues += _check_course_visibility(site)
+    issues += _check_anchor_aliases(site)
     return issues
 
 
@@ -235,4 +236,24 @@ def _check_course_visibility(site: Site) -> list[Issue]:
                     "course-not-visible", published[0].rel,
                     f"course {course.id!r} has published material in {lang!r} but no {' or '.join(missing)} there, so nothing would be published",
                 ))
+    return out
+
+
+_ANCHOR_RE = re.compile(r"^[\w-]+$")
+
+
+def _check_anchor_aliases(site: Site) -> list[Issue]:
+    """An alias keeps a published anchor of a public page; it must differ from its target."""
+    out = []
+    public = set(public_urls(site))
+    seen: set[tuple[str, str]] = set()
+    for n, alias in enumerate(site.anchor_aliases):
+        rel = f"data/anchor-aliases.yml[{n}]"
+        if alias.page not in public:
+            out.append(error("anchor-alias", rel, f"{alias.page} is not a public page"))
+        elif not (_ANCHOR_RE.match(alias.anchor) and _ANCHOR_RE.match(alias.target)) or alias.anchor == alias.target:
+            out.append(error("anchor-alias", rel, "anchor and target must be different heading ids"))
+        elif (alias.page, alias.anchor) in seen:
+            out.append(error("anchor-alias", rel, f"{alias.page}#{alias.anchor} is listed twice"))
+        seen.add((alias.page, alias.anchor))
     return out
