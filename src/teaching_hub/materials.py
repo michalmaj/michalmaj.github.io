@@ -1,15 +1,22 @@
 """Verify that every (repository, ref, path) referenced by published content exists.
 
+Two kinds of references are checked: materials in the front matter of task sets and guides, and
+links in the text of any page to a file, directory or ref (tag or branch) of a registered
+repository, e.g. `<repository>/tree/module-01-start` or `<repository>/blob/main/README.md`.
+
 The resolver is injected: CI can use the GitHub API or a link checker; local
 runs can use GitResolver, which only reads local clones (no fetch, no writes).
 """
 
+import re
 import subprocess
 from collections.abc import Callable
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 from .issues import Issue, error, warning
 from .loader import Site
+from .mdtools import link_targets
 from .models import RepoMaterial, Repository
 
 # resolver(repo_id, ref, path) -> True (exists) | False (missing) | None (cannot verify)
@@ -23,8 +30,36 @@ def _materials(doc):
     return found
 
 
+_REF_PATH = re.compile(r"^/(?:tree|blob)/([^/]+)(?:/(.*))?$")
+
+
+def _repository_links(site: Site, doc) -> list[tuple[str, str, str, str]]:
+    """(repository id, ref, path, link) for links in a page's text into a registered repository.
+
+    The repository itself, `/tree/<ref>[/<path>]` and `/blob/<ref>/<path>` are checked; other
+    GitHub pages (issues, releases, …) cannot be read from a clone and are left out. A ref is one
+    path segment (tags and branches without "/").
+    """
+    out = []
+    if doc.kind == "employers":
+        return out
+    for link in link_targets(doc.body):
+        parts = urlsplit(link)
+        for repo in site.repositories.values():
+            base = urlsplit(repo.url)
+            if (parts.scheme, parts.netloc) != (base.scheme, base.netloc):
+                continue
+            if parts.path.rstrip("/") == base.path.rstrip("/"):
+                out.append((repo.id, repo.default_branch, "", link))
+            elif parts.path.startswith(base.path.rstrip("/") + "/"):
+                match = _REF_PATH.match(parts.path[len(base.path.rstrip("/")):])
+                if match:
+                    out.append((repo.id, match.group(1), unquote(match.group(2) or "").rstrip("/"), link))
+    return out
+
+
 def referenced_repositories(site: Site) -> list[Repository]:
-    """Registered repositories that task sets or guides refer to (any status), in registry order."""
+    """Registered repositories that materials or links in page text refer to, in registry order."""
     used = {
         m.repository
         for doc in site.docs
@@ -32,6 +67,7 @@ def referenced_repositories(site: Site) -> list[Repository]:
         for m in _materials(doc)
         if isinstance(m, RepoMaterial)
     }
+    used |= {repo_id for doc in site.docs for repo_id, _, _, _ in _repository_links(site, doc)}
     return [repo for repo_id, repo in site.repositories.items() if repo_id in used]
 
 
@@ -51,6 +87,14 @@ def check_materials(site: Site, resolver: Resolver) -> list[Issue]:
                 issues.append(warning("material-unverified", doc.rel, f"{target} could not be checked"))
             elif not found:
                 issues.append(error("material-missing", doc.rel, f"{target} does not exist"))
+    for doc in site.docs:
+        for repo_id, ref, path, link in _repository_links(site, doc):
+            found = resolver(repo_id, ref, path)
+            target = f"{repo_id}@{ref}:{path or '/'}"
+            if found is None:
+                issues.append(warning("repository-link-unverified", doc.rel, f"{target} could not be checked ({link})"))
+            elif not found:
+                issues.append(error("repository-link-missing", doc.rel, f"{target} does not exist ({link})"))
     return issues
 
 

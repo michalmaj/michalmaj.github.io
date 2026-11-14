@@ -208,7 +208,12 @@ whole project has MIT for both code and content.
 - `uv run teaching-hub check-materials --repos-root <dir>` checks that every
   `(repository, ref, path)` exists, read-only, in local clones named after the repository id
   (`<dir>/<repository-id>`). Branches are read from `origin/<branch>`, so fetch first.
-- In pull requests, CI runs the same check in fresh clones.
+- Links in the text of any page to a registered repository are checked the same way: the
+  repository itself, `…/tree/<ref>[/<path>]` and `…/blob/<ref>/<path>`, for example a table of
+  modules that links documentation on `main` and starter code on tags (`repository-link-missing`).
+  Links to other GitHub pages, such as issues, are not checked.
+- In pull requests, CI runs the same check in fresh clones of every repository that materials or
+  page text refer to.
 
 **Links to files of this repository** (for example `LICENSE`) must point to files that exist in the
 same commit; production builds check this (`broken-repository-link`).
