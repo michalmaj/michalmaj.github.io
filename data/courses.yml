@@ -6,3 +6,8 @@ courses:
       pl: "Inżynieria oprogramowania"
     summary:
       pl: "Praktyczny kurs w 30 laboratoriach: od terminala i Gita, przez testy, projektowanie i pracę w zespole, po API, wydanie i projekt zespołowy. Na tej stronie dostępny jest obecnie pierwszy zestaw zadań."
+  - id: mechatronic-systems-programming
+    name:
+      pl: "Programowanie systemów mechatronicznych"
+    summary:
+      pl: "Programowanie w C++ na przykładzie symulatora przemysłowej linii sortującej: od narzędzi i podstaw sterowania, przez napęd taśmy, tryby pracy i awaryjny stop, po obsługę usterek, czujniki, scenariusze testowe i projekt końcowy. Ćwiczenia wykonuje się na zwykłym komputerze."

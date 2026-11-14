@@ -4,3 +4,5 @@
 /courses/repositories/
 /courses/software-engineering/
 /courses/software-engineering/task-sets/i-am-a-developer/
+/courses/mechatronic-systems-programming/
+/courses/mechatronic-systems-programming/guides/course-materials/
