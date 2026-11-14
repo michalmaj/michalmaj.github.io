@@ -2,3 +2,5 @@ enabled: true
 path: courses
 site_name_key: site_name_courses
 footer_key: footer_courses
+# One search index with the home space (see home.yml).
+search_group: teaching

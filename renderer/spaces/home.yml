@@ -2,3 +2,5 @@ enabled: true
 path: ""
 site_name_key: site_name_home
 footer_key: footer_home
+# One search index with the course space: the home page and /licensing/ find teaching material.
+search_group: teaching

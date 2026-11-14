@@ -6,12 +6,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .assemble import PreviewNotAllowed
+from .assemble import Build, PreviewNotAllowed
 from .check import (
     check_anchor_aliases,
     check_artifact,
     check_pages_present,
     check_repository_links,
+    check_search_indexes,
     check_site_urls,
     check_sitemap,
     check_tracked_paths,
@@ -19,9 +20,10 @@ from .check import (
 )
 from .loader import load_site
 from .materials import GitResolver, check_materials, referenced_repositories
+from .models import LANGS
 from .production import FIXTURE_MARKERS, has_production_content, is_test_fixture, production_status
-from .render import RenderError, build_site
-from .urls import public_urls
+from .render import RenderError, build_site, search_groups
+from .urls import public_urls, space_root
 from .validate import check_registered_urls, validate
 
 
@@ -38,10 +40,17 @@ def _cmd_validate(args) -> int:
     return _report(validate(load_site(Path(args.source), drafts=args.drafts, config_dir=Path(args.config_dir))))
 
 
+def _search_groups(site) -> list[list[str]]:
+    """Search groups of every possible build of the site (prefixes of enabled and reserved spaces)."""
+    builds = [Build(lang, name, space_root(lang, cfg.path), Path()) for lang in LANGS for name, cfg in site.spaces.items()]
+    return search_groups(site, builds)
+
+
 def _production_checks(site, site_dir: Path) -> tuple[list[str], list]:
     """Extra forbidden strings and issues for a production artifact."""
     issues = check_site_urls(site_dir, site.settings["site_url"])
     issues += check_sitemap(site_dir, site.settings["site_url"], public_urls(site))
+    issues += check_search_indexes(site_dir, _search_groups(site))
     issues += check_registered_urls(site)
     if site.settings.get("repository_url"):
         issues += check_repository_links(site_dir, site.settings["repository_url"], site.root)

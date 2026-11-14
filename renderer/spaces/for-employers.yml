@@ -1,3 +1,5 @@
 # Reserved space; disabled until approved content exists.
 enabled: false
 path: for-employers
+# Its own search index: teaching and professional pages never appear in each other's results.
+search_group: professional

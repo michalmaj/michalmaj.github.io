@@ -247,3 +247,19 @@ def test_production_checks_require_one_complete_sitemap(sample, tmp_path, capsys
     capsys.readouterr()
     assert main(["check", "--production", "--site-dir", str(site_dir), *args]) == 1
     assert "[sitemap]" in capsys.readouterr().out
+
+
+def test_production_checks_require_complete_search_indexes(sample, tmp_path, capsys):
+    import json
+    make_production_like(sample)
+    args = ["--source", str(sample), "--config-dir", str(sample / "renderer")]
+    assert main(["urls", *args, "--write"]) == 0
+    site_dir = tmp_path / "_site"
+    assert main(["build", "--production", *args, "--build-dir", str(tmp_path / "b"), "--site-dir", str(site_dir)]) == 0
+    index = site_dir / "search.json"
+    data = json.loads(index.read_text(encoding="utf-8"))
+    data["items"] = [i for i in data["items"] if not i["location"].startswith("courses/")]
+    index.write_text(json.dumps(data), encoding="utf-8")
+    capsys.readouterr()
+    assert main(["check", "--production", "--site-dir", str(site_dir), *args]) == 1
+    assert "[search-index]" in capsys.readouterr().out

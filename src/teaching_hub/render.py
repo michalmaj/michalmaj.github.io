@@ -1,6 +1,7 @@
 """Run a renderer for each build and compose one artifact."""
 
 import html
+import json
 import re
 import shutil
 import subprocess
@@ -75,6 +76,67 @@ def not_found_page(site: Site, icon: str | None = None) -> str:
     )
 
 
+# Search index of a build: Zensical writes search.json with "items", MkDocs Material
+# search/search_index.json with "docs". Each entry's "location" is relative to the build root.
+SEARCH_INDEXES = (("search.json", "items"), ("search/search_index.json", "docs"))
+
+
+def search_groups(site: Site, builds) -> list[list[str]]:
+    """Build prefixes that share one search index: same language and same search group of the space."""
+    groups: dict[tuple[str, str], list[str]] = {}
+    for build in builds:
+        space = site.spaces.get(build.space)
+        group = (space.search_group if space else None) or f"space:{build.space}"
+        groups.setdefault((build.lang, group), []).append(build.prefix)
+    return list(groups.values())
+
+
+def relocate(location: str, source: str, target: str) -> str:
+    """A search entry `location` of the build at `source`, relative to the build at `target`."""
+    path, hash_, fragment = location.partition("#")
+    absolute = source + path
+    parts = [p for p in absolute.split("/") if p]
+    base = [p for p in target.split("/") if p]
+    common = 0
+    while common < min(len(parts), len(base)) and parts[common] == base[common]:
+        common += 1
+    relative = [".."] * (len(base) - common) + parts[common:]
+    out = "/".join(relative) + ("/" if relative and absolute.endswith("/") else "")
+    return out + hash_ + fragment
+
+
+def _read_index(site_dir: Path, prefix: str) -> tuple[Path, str, dict] | None:
+    for rel, key in SEARCH_INDEXES:
+        path = site_dir / prefix.strip("/") / rel
+        if path.is_file():
+            return path, key, json.loads(path.read_text(encoding="utf-8"))
+    return None
+
+
+def _merge_search_indexes(site: Site, builds: list[Build], site_dir: Path) -> None:
+    """Each build's search index also lists the entries of the other builds of its group.
+
+    Only entries the renderer wrote are merged, so pages it left out (drafts, archived pages
+    excluded from search) stay out. Each page or section appears once per index.
+    """
+    for group in search_groups(site, builds):
+        indexes = {prefix: index for prefix in group if (index := _read_index(site_dir, prefix))}
+        own = {prefix: list(data[key]) for prefix, (_, key, data) in indexes.items()}
+        for prefix, (path, key, data) in indexes.items():
+            seen: set[str] = set()
+            merged = []
+            for source in [prefix, *(p for p in group if p != prefix and p in own)]:
+                for entry in own[source]:
+                    absolute = relocate(entry["location"], source, "/")
+                    if absolute in seen:
+                        continue
+                    seen.add(absolute)
+                    location = entry["location"] if source == prefix else relocate(entry["location"], source, prefix)
+                    merged.append({**entry, "location": location})
+            data[key] = merged
+            path.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+
+
 _URL_ENTRY = re.compile(r"<url>.*?</url>", re.S)
 FAVICON = "assets/images/favicon.png"
 
@@ -110,6 +172,7 @@ def compose(site: Site, builds: list[Build], site_dir: Path) -> None:
         if build.prefix.strip("/"):
             (target / "404.html").unlink(missing_ok=True)  # GitHub Pages serves only /404.html
     _merge_sitemaps(site, builds, site_dir)
+    _merge_search_indexes(site, builds, site_dir)
     # An absolute icon URL keeps the 404 page self-contained at any depth of a missing path.
     icon = urlsplit(site.settings["site_url"]).path.rstrip("/") + "/" + FAVICON if (site_dir / FAVICON).is_file() else None
     (site_dir / "404.html").write_text(not_found_page(site, icon), encoding="utf-8")

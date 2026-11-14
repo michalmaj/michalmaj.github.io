@@ -297,3 +297,66 @@ def check_sitemap(site_dir: Path, site_url: str, urls) -> list[Issue]:
     if not robots.is_file() or line not in robots.read_text(encoding="utf-8", errors="replace").splitlines():
         issues.append(error("sitemap", "robots.txt", f"robots.txt must contain the line {line!r}"))
     return issues
+
+
+_SEARCH_INDEXES = (("search.json", "items"), ("search/search_index.json", "docs"))
+
+
+def _absolute(location: str, prefix: str) -> str:
+    """Site path of a search entry location of the build at `prefix`."""
+    path, hash_, fragment = location.partition("#")
+    parts: list[str] = []
+    for part in (prefix + path).split("/"):
+        if part == "..":
+            if parts:
+                parts.pop()
+        elif part not in ("", "."):
+            parts.append(part)
+    url = "/" + "/".join(parts) + ("/" if parts and (prefix + path).endswith("/") else "")
+    return url + hash_ + fragment
+
+
+def check_search_indexes(site_dir: Path, groups: list[list[str]]) -> list[Issue]:
+    """Builds that share a search index (same language and audience) list the same existing pages once.
+
+    `groups` holds the build prefixes of every search group, e.g. [["/", "/courses/"], ["/en/", ...]].
+    """
+    site_dir = Path(site_dir)
+    issues: list[Issue] = []
+    prefixes = sorted({p for group in groups for p in group}, key=len, reverse=True)
+    owner = lambda url: next((p for p in prefixes if url.startswith(p)), None)  # noqa: E731
+    pages_cache: dict[Path, set[str]] = {}
+    for group in groups:
+        listed: dict[str, set[str]] = {}
+        for prefix in group:
+            found = next(((site_dir / prefix.strip("/") / rel, key) for rel, key in _SEARCH_INDEXES
+                          if (site_dir / prefix.strip("/") / rel).is_file()), None)
+            if found is None:
+                continue
+            path, key = found
+            rel = path.relative_to(site_dir).as_posix()
+            entries = [_absolute(e["location"], prefix) for e in json.loads(path.read_text(encoding="utf-8"))[key]]
+            for url in sorted({u for u in entries if entries.count(u) > 1}):
+                issues.append(error("search-index", rel, f"lists {url} twice"))
+            for url in sorted(set(entries)):
+                page, _, fragment = url.partition("#")
+                if owner(page) not in group:
+                    issues.append(error("search-index", rel, f"lists {url}, outside its language and audience"))
+                    continue
+                target = _target_file(site_dir, page)
+                if target is None:
+                    issues.append(error("search-index", rel, f"lists {url}: no such page"))
+                    continue
+                if fragment:
+                    if target not in pages_cache:
+                        parser = _Page()
+                        parser.feed(target.read_text(encoding="utf-8", errors="replace"))
+                        pages_cache[target] = parser.ids
+                    if unquote(fragment) not in pages_cache[target]:
+                        issues.append(error("search-index", rel, f"lists {url}: no element with that id"))
+            listed[prefix] = {u.partition("#")[0] for u in entries}
+        every = set().union(*listed.values()) if listed else set()
+        for prefix, pages in listed.items():
+            for page in sorted(every - pages):
+                issues.append(error("search-index", prefix, f"the search index of {prefix} does not list {page}"))
+    return issues
