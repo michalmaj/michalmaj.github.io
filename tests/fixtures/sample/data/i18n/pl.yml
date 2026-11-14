@@ -6,6 +6,14 @@ space_for_employers: "Dla pracodawców"
 nav_home: "Strona główna"
 nav_licensing: "Licencje"
 nav_catalog: "Przedmioty"
+# Repository catalog (/courses/repositories/).
+nav_repositories: "Repozytoria"
+repository_technologies: "Technologie"
+repository_license: "Licencja"
+repository_courses: "Przedmioty"
+repository_link: "Repozytorium na GitHubie"
+repository_issue: "Zgłoś problem"
+repository_documentation: "Dokumentacja"
 # Name of the button that expands or collapses a navigation section; {name} is the section.
 nav_section_toggle: "Podsekcje: {name}"
 # Names of the header buttons that open the navigation and the search on narrow screens.

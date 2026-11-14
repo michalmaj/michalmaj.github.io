@@ -40,6 +40,7 @@ is translated automatically.
 | licensing page | `content/<lang>/home/licensing.md` |
 | catalogue introduction (optional) | `content/<lang>/courses/index.md` |
 | "how to use" page (optional) | `content/<lang>/courses/how-to-use.md` |
+| repository catalog: page text (optional) | `content/<lang>/courses/repositories.md` |
 | course description | `content/<lang>/courses/<course-id>/index.md` |
 | task set | `content/<lang>/courses/<course-id>/task-sets/NN-<slug>.md` |
 | guide (information page of a course) | `content/<lang>/courses/<course-id>/guides/<slug>.md` |
@@ -186,10 +187,18 @@ repositories:
     url: https://github.com/michalmaj/software-engineering-in-practice
     default_branch: main
     maturity: not_assessed     # not_assessed | in_development | stable | maintenance | archived
+    description:
+      pl: "One or two sentences for the repository catalog."
     technologies: [Python, Go, Java]
     content_languages: [en, pl]
-    licenses: {code: MIT, content: CC-BY-4.0}   # SPDX ids; shown on the licensing page
+    licenses: {code: MIT, content: CC-BY-4.0}   # SPDX ids, as in the repository's license files
+    issue_templates: true      # the repository has issue templates or forms
+    documentation_url: https://…  # optional: a published site of the repository
 ```
+
+Record only facts checked in the repository itself: technologies from its project files, languages
+of its materials and the licenses of its license files. A repository with one MIT `LICENSE` for the
+whole project has MIT for both code and content.
 
 **Checks on materials:**
 
@@ -203,6 +212,26 @@ repositories:
 
 **Links to files of this repository** (for example `LICENSE`) must point to files that exist in the
 same commit; production builds check this (`broken-repository-link`).
+
+## Repository catalog
+
+`/courses/repositories/` lists **every repository in `data/repositories.yml`**. It exists in a
+language when `content/<lang>/courses/repositories.md` exists. That file holds the text shown above
+the cards, for example how to give feedback; it is Markdown only, without front matter.
+
+Each card shows:
+
+- the name, linked to the repository, and the description in the page's language;
+- technologies, languages of the materials and licenses;
+- "w rozbudowie" / "in development" when `maturity: in_development`;
+- the courses that use the repository: only public courses whose published task sets or guides
+  link it, so there is never a link to a course that is not published;
+- links to the repository and to report a problem. With `issue_templates: true` the link opens the
+  repository's chooser of issue forms (`/issues/new/choose`); otherwise it opens a blank issue
+  (`/issues/new`). Keep the flag in line with the repository's `.github/ISSUE_TEMPLATE/`.
+
+Because the catalog links every registered repository, the licensing page lists the licenses of
+all of them.
 
 ## Status: published and archived
 

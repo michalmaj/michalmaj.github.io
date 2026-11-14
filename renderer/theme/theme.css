@@ -407,6 +407,38 @@ body {
   font-size: 1.3em;
 }
 
+/* Repository catalog (/courses/repositories/). A repository card holds several links (the repository,
+   reporting a problem, the courses that use it), so its title is an ordinary link instead of covering
+   the whole card. */
+.md-typeset .th-cards--repositories {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+}
+
+.md-typeset .th-card--repository > :is(h2, h3) > a:not(.headerlink)::after {
+  content: none;
+}
+
+.md-typeset .th-card--repository > :is(.th-card__facts, .th-card__courses) {
+  font-size: 0.85em;
+}
+
+.md-typeset .th-feedback {
+  margin: 1rem 0 1.5rem;
+  padding: 1rem 1.25rem;
+  background-color: var(--th-surface);
+  border: 1px solid var(--th-border);
+  border-left: 3px solid var(--th-accent);
+  border-radius: var(--th-radius);
+}
+
+.md-typeset .th-feedback > h2:first-child {
+  margin-top: 0;
+}
+
+.md-typeset .th-feedback > p:last-child {
+  margin-bottom: 0;
+}
+
 .md-typeset .th-card--space > h2 > a:not(.headerlink)::before {
   content: "→";
   float: right;

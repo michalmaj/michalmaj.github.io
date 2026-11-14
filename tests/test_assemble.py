@@ -178,6 +178,80 @@ def test_licensing_table_names_every_column(sample, tmp_path):
     assert "| Repository | Code | Content |" in page(out, "en", "home", "licensing.md")
 
 
+# ---------------------------------------------------------------- repository catalog
+
+CATALOG_TEXT = "## Pomóż rozwijać materiały\n\nTekst zastępczy sekcji opinii.\n"
+
+
+def with_catalog(root: Path, langs=("pl",)) -> None:
+    for lang in langs:
+        write(root / f"content/{lang}/courses/repositories.md", CATALOG_TEXT)
+
+
+def test_repository_catalog_lists_every_registered_repository(sample, tmp_path):
+    with_catalog(sample)
+    out, builds = build(sample, tmp_path)
+    catalog = page(out, "pl", "courses", "repositories.md")
+    assert catalog.index("Pomóż rozwijać materiały") < catalog.index("## [Software Engineering in Practice]")
+    for name in ("Software Engineering in Practice", "Programowanie systemów mechatronicznych", "Deep Learning",
+                 "Python Dev Setup for Beginners"):
+        assert f"## [{name}](https://github.com/michalmaj/" in catalog, name
+    nav = config(out, "pl", "courses")["nav"]
+    assert nav[1] == {"Repozytoria": "repositories.md"}  # right after the catalogue
+
+
+def test_repository_card_shows_facts_from_the_registry_only(sample, tmp_path):
+    with_catalog(sample)
+    out, _ = build(sample, tmp_path)
+    catalog = page(out, "pl", "courses", "repositories.md")
+    card = catalog[catalog.index("## [Deep Learning]"):catalog.index("## [Python Dev Setup for Beginners]")]
+    assert "Python, PyTorch, Jupyter" in card
+    assert "Kod: MIT" in card and "Treści: CC-BY-SA-4.0" in card
+    assert "w rozbudowie" in card  # maturity in_development
+    assert "https://github.com/michalmaj/deep-learning/issues/new)" in card  # no issue templates
+    mechatronics = catalog[catalog.index("## [Programowanie systemów mechatronicznych]"):catalog.index("## [Deep Learning]")]
+    assert "Licencja: MIT" in mechatronics and "Kod:" not in mechatronics  # one license for the whole repository
+    assert "issues/new/choose)" in mechatronics  # issue templates
+    assert "w rozbudowie" not in mechatronics  # not_assessed shows nothing
+
+
+def test_repository_catalog_links_only_published_courses_that_use_a_repository(sample, tmp_path):
+    with_catalog(sample)
+    # A repository used only by a course that is not public must not link to it.
+    write(sample / "content/pl/courses/sample-course-c/guides/hidden.md",
+          '---\ntitle: "Ukryta"\nstatus: published\nmaterials:\n  - repository: deep-learning\n    lang: pl\n    label: "x"\n---\nTekst.\n')
+    out, _ = build(sample, tmp_path)
+    catalog = page(out, "pl", "courses", "repositories.md")
+    se = catalog[catalog.index("## [Software Engineering in Practice]"):catalog.index("## [Programowanie systemów mechatronicznych]")]
+    assert "[Przedmiot przykładowy A](sample-course-a/index.md)" in se
+    assert "sample-course-c" not in catalog and "sample-course-d" not in catalog
+
+
+def test_no_repository_catalog_without_its_page_text(sample, tmp_path):
+    out, _ = build(sample, tmp_path)
+    assert not (out / "pl/courses/docs/repositories.md").exists()
+    assert {"Repozytoria": "repositories.md"} not in config(out, "pl", "courses")["nav"]
+
+
+def test_repository_catalog_url_is_public_and_reserved(sample, tmp_path):
+    from teaching_hub.models import RESERVED_COURSE_IDS
+    from teaching_hub.urls import public_urls
+    assert "/courses/repositories/" not in public_urls(load_site(sample))
+    with_catalog(sample)
+    assert "/courses/repositories/" in public_urls(load_site(sample))
+    assert "/en/courses/repositories/" not in public_urls(load_site(sample))  # no English page text
+    assert "repositories" in RESERVED_COURSE_IDS
+
+
+def test_licensing_page_lists_every_repository_of_the_catalog(sample, tmp_path):
+    with_catalog(sample)
+    out, _ = build(sample, tmp_path)
+    licensing = page(out, "pl", "home", "licensing.md")
+    for name in ("Software Engineering in Practice", "Programowanie systemów mechatronicznych", "Deep Learning",
+                 "Python Dev Setup for Beginners"):
+        assert f"| [{name}](" in licensing, name
+
+
 # ---------------------------------------------------------------- navigation accessibility
 
 

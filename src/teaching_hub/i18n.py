@@ -6,7 +6,8 @@ from .loader import Site
 REQUIRED_KEYS = frozenset(
     {
         "site_name_home", "site_name_courses", "space_courses", "nav_home", "nav_licensing", "nav_section_toggle", "nav_drawer_button", "search_button",
-        "nav_catalog", "nav_how_to_use", "task_set", "task", "task_sets", "tasks_count", "guides",
+        "nav_catalog", "nav_how_to_use", "nav_repositories", "repository_technologies",
+        "repository_license", "repository_courses", "repository_link", "repository_issue", "repository_documentation", "task_set", "task", "task_sets", "tasks_count", "guides",
         "used_materials", "course_sets_count", "optional", "duration", "minutes", "requires", "ref",
         "archived_title", "archived_text", "replaced_by", "draft_title", "draft_text",
         "other_language", "other_language_home", "maturity_in_development", "maturity_archived",

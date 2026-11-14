@@ -21,6 +21,7 @@ from .models import LANGS, ExternalMaterial, RepoMaterial
 from .slugs import add_anchor_aliases
 from .urls import (
     doc_url,
+    has_repository_catalog,
     lang_prefix,
     space_has_content,
     space_root,
@@ -291,6 +292,65 @@ def _catalog_page(site: Site, lang: str, include_drafts: bool) -> str:
     return _front(False, hide=("toc",)) + "\n".join(out).rstrip() + "\n"
 
 
+def _courses_using_repositories(site: Site, lang: str, include_drafts: bool) -> dict[str, list[str]]:
+    """Repository id → public courses whose published task sets or guides use it, in catalogue order."""
+    used: dict[str, list[str]] = {}
+    for course_id in visible_courses(site, lang, include_drafts):
+        docs = [d for kind in ("task_set", "guide") for d in site.by_kind(kind, lang, course_id) if _listed(d, include_drafts)]
+        for repo_id in _used_repositories(site, docs):
+            used.setdefault(repo_id, []).append(course_id)
+    return used
+
+
+def _license_line(site: Site, lang: str, repo) -> str | None:
+    lic = repo.licenses
+    if lic is None or not (lic.code or lic.content):
+        return None
+    if lic.code and lic.content and lic.code != lic.content:
+        return f"{t(site, lang, 'licensing_code')}: {lic.code} · {t(site, lang, 'licensing_content')}: {lic.content}"
+    return f"{t(site, lang, 'repository_license')}: {lic.code or lic.content}"
+
+
+def _repositories_page(site: Site, lang: str, include_drafts: bool) -> str:
+    """Every registered repository; courses are linked only where they are public and use it."""
+    other = _other(lang)
+    twin_url = f"{space_root(other, 'courses')}repositories/" if has_repository_catalog(site, other) else None
+    switch = _switch(site, lang, twin_url, include_drafts)
+    crumbs = _crumbs(site, lang, [f"[{t(site, lang, 'nav_catalog')}](index.md)"])
+    out = [m.page_marker("repositories"), "", *m.pagebar(crumbs, switch), f"# {t(site, lang, 'nav_repositories')}", ""]
+    text = site.find("repositories_index", lang).body.strip()
+    if text:
+        out += [*m.block("th-feedback", [text]), ""]
+    courses = _courses_using_repositories(site, lang, include_drafts)
+    cards: list[str] = []
+    for repo in site.repositories.values():
+        sr_name = f'<span class="th-sr">: {m.esc(repo.name)}</span>'
+        card = [f"## [{repo.name}]({repo.url})", ""]
+        if repo.description.get(lang):
+            card += [repo.description.get(lang), ""]
+        facts = []
+        if repo.technologies:
+            facts.append(f"{t(site, lang, 'repository_technologies')}: {m.esc(', '.join(repo.technologies))}")
+        license_line = _license_line(site, lang, repo)
+        if license_line:
+            facts.append(m.esc(license_line))
+        badges = [_lang_badge(site, lang, code) for code in repo.content_languages]
+        badges.append(_maturity_badge(site, lang, repo))
+        card += [*m.paragraph(" · ".join(facts) + " " + m.meta(badges), "th-card__facts"), ""]
+        if courses.get(repo.id):
+            links = ", ".join(f"[{site.courses[c].name.get(lang)}]({c}/index.md)" for c in courses[repo.id])
+            card += [*m.paragraph(f"{t(site, lang, 'repository_courses')}: {links}", "th-card__courses"), ""]
+        issues = f"{repo.url}/issues/new/choose" if repo.issue_templates else f"{repo.url}/issues/new"
+        actions = [f"[{t(site, lang, 'repository_link')}{sr_name}]({repo.url})",
+                   f"[{t(site, lang, 'repository_issue')}{sr_name}]({issues})"]
+        if repo.documentation_url:
+            actions.append(f"[{t(site, lang, 'repository_documentation')}{sr_name}]({repo.documentation_url})")
+        card += m.paragraph(" · ".join(actions), "th-card__meta")
+        cards += [*m.block("th-card th-card--repository", card), ""]
+    out += m.block("th-cards th-cards--repositories", cards)
+    return _front(False) + "\n".join(out).rstrip() + "\n"
+
+
 def _home_page(site: Site, lang: str, include_drafts: bool) -> str:
     doc = site.find("home", lang)
     other = _other(lang)
@@ -315,8 +375,11 @@ def _licensing_page(site: Site, lang: str) -> str:
     else:
         out.append(t(site, lang, "none"))
     out += ["", f"## {t(site, lang, 'licensing_repositories')}", ""]
-    published = [d for d in site.docs if d.kind in ("task_set", "guide") and d.status == "published"]
-    repos = _used_repositories(site, published)
+    if has_repository_catalog(site, lang):
+        repos = list(site.repositories)  # the repository catalog links every registered repository
+    else:
+        published = [d for d in site.docs if d.kind in ("task_set", "guide") and d.status == "published"]
+        repos = _used_repositories(site, published)
     if repos:
         out += [f"| {t(site, lang, 'licensing_repository')} | {t(site, lang, 'licensing_code')} | {t(site, lang, 'licensing_content')} |", "|---|---|---|"]
         for repo_id in repos:
@@ -432,6 +495,9 @@ def _courses_build(site: Site, lang: str, root: Path, include_drafts: bool) -> t
     if how_to is not None:
         _write(docs / "how-to-use.md", how_to.body)
         nav.append({t(site, lang, "nav_how_to_use"): "how-to-use.md"})
+    if has_repository_catalog(site, lang):
+        _write(docs / "repositories.md", _repositories_page(site, lang, include_drafts))
+        nav.append({t(site, lang, "nav_repositories"): "repositories.md"})
     hidden: list[str] = []
     for course_id in visible_courses(site, lang, include_drafts):
         course = site.courses[course_id]
