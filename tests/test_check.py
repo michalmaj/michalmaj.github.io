@@ -1,7 +1,15 @@
+import json
 from pathlib import Path
 
 from conftest import write
-from teaching_hub.check import check_anchor_aliases, check_artifact, check_repository_links, check_sitemap, check_tracked_paths
+from teaching_hub.check import (
+    check_anchor_aliases,
+    check_artifact,
+    check_repository_links,
+    check_search_indexes,
+    check_sitemap,
+    check_tracked_paths,
+)
 from teaching_hub.models import AnchorAlias
 
 PAGE = '<html lang="pl"><body>{}</body></html>'
@@ -208,3 +216,31 @@ def test_a_complete_sitemap_named_in_robots_txt_passes(tmp_path):
                                                "<url><loc>https://michalmaj.github.io/courses/</loc></url>"))
     write(site / "robots.txt", "User-agent: *\nDisallow:\n\nSitemap: https://michalmaj.github.io/sitemap.xml\n")
     assert check_sitemap(site, SITE_URL, ["/", "/courses/"]) == []
+
+
+def search_site(tmp_path: Path, root_items: list[str], courses_items: list[str]) -> Path:
+    site = tmp_path / "_site"
+    for rel, ids in (("index.html", ["top"]), ("licensing/index.html", ["kod"]), ("courses/index.html", []),
+                     ("courses/a/index.html", ["lab-01"]), ("en/index.html", [])):
+        write(site / rel, PAGE.format("".join(f'<h2 id="{i}">x</h2>' for i in ids)))
+    for prefix, items in (("", root_items), ("courses/", courses_items)):
+        write(site / prefix / "search.json", json.dumps({"config": {}, "items": [{"location": i} for i in items]}))
+    return site
+
+
+def test_search_indexes_of_a_language_list_the_same_existing_pages_once(tmp_path):
+    site = search_site(tmp_path, ["", "licensing/#kod", "courses/", "courses/a/#lab-01"],
+                       ["", "a/#lab-01", "../", "../licensing/#kod"])
+    assert check_search_indexes(site, [["/", "/courses/"]]) == []
+
+
+def test_search_index_problems_are_reported(tmp_path):
+    site = search_site(tmp_path,
+                       ["", "licensing/#kod", "courses/", "courses/a/#lab-01", "courses/a/#lab-01", "courses/gone/", "en/"],
+                       ["", "a/#lab-01", "../licensing/#nie-ma"])
+    messages = [i.message for i in check_search_indexes(site, [["/", "/courses/"], ["/en/"]])]
+    assert any("/courses/a/#lab-01" in m and "twice" in m for m in messages)
+    assert any("/courses/gone/" in m and "no such page" in m for m in messages)
+    assert any("/licensing/#nie-ma" in m and "no element" in m for m in messages)
+    assert any("/en/" in m and "outside" in m for m in messages)
+    assert any("/courses/" in m and "does not list" in m for m in messages)  # / is missing from the course index

@@ -6,9 +6,10 @@ from pathlib import Path
 import pytest
 
 from conftest import write
-from teaching_hub.check import check_anchor_aliases, check_artifact, check_sitemap
+from teaching_hub.assemble import Build
+from teaching_hub.check import check_anchor_aliases, check_artifact, check_search_indexes, check_sitemap
 from teaching_hub.loader import load_site
-from teaching_hub.render import RenderError, build_site
+from teaching_hub.render import RenderError, build_site, relocate, search_groups
 from teaching_hub.urls import public_urls
 
 pytestmark = pytest.mark.renderer
@@ -65,14 +66,13 @@ def build_index(site_dir: Path, prefix: str) -> str:
 
 
 @pytest.mark.parametrize("renderer", RENDERERS)
-def test_search_indexes_are_separate_per_build(sample, tmp_path, renderer):
+def test_search_indexes_are_separate_per_language(sample, tmp_path, renderer):
     site_dir = tmp_path / "_site"
     build_site(load_site(sample), tmp_path / "build", site_dir, renderer=renderer)
     text = build_index(site_dir, "courses")
     assert "Temat zastępczy alfa" in text
-    assert "Placeholder topic alpha" not in text  # English build has its own index
-    assert "Tekst zastępczy strony licencji" not in text  # home space has its own index
-
+    assert "Placeholder topic alpha" not in text  # English builds have their own index
+    assert "Tekst zastępczy strony licencji" in text  # the home space joins the course space
 
 def test_root_404_is_bilingual_and_self_contained(sample, tmp_path):
     site_dir = tmp_path / "_site"
@@ -150,6 +150,7 @@ class _Navigation(HTMLParser):
         self.checkboxes: set[str] = set()
         self.labelled_navs: set[str] = set()
         self.scripts: list[str] = []
+        self.header_buttons: list[dict] = []
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
@@ -161,6 +162,8 @@ class _Navigation(HTMLParser):
             self.labelled_navs.add(a["aria-labelledby"])
         elif tag == "script" and a.get("src"):
             self.scripts.append(a["src"])
+        if tag == "label" and "md-header__button" in (a.get("class") or "").split() and a.get("for"):
+            self.header_buttons.append(a)
 
 
 @pytest.mark.parametrize("renderer", RENDERERS)
@@ -175,3 +178,89 @@ def test_navigation_script_finds_the_section_toggles_it_makes_accessible(sample,
     for toggle in page.toggles:
         assert toggle["for"] in page.checkboxes
         assert toggle.get("id") in page.labelled_navs
+
+
+# ---------------------------------------------------------------- search across the builds of a language
+
+
+def index_entries(site_dir: Path, prefix: str) -> list[str]:
+    """Locations of one build's search index, as absolute site paths."""
+    for rel, key in (("search.json", "items"), ("search/search_index.json", "docs")):
+        path = site_dir / prefix.strip("/") / rel
+        if path.is_file():
+            return [prefix + e["location"] for e in json.loads(path.read_text(encoding="utf-8"))[key]]
+    raise AssertionError(f"no search index under {prefix}")
+
+
+def normalised(url: str) -> str:
+    parts = []
+    for part in url.split("#")[0].split("/"):
+        if part == "..":
+            parts.pop()
+        elif part not in ("", "."):
+            parts.append(part)
+    path = "/" + "/".join(parts) + ("/" if parts else "")
+    return path + ("#" + url.split("#", 1)[1] if "#" in url else "")
+
+
+def test_search_groups_join_builds_of_one_language_and_audience(sample, tmp_path):
+    site = load_site(sample)
+    builds = [Build(lang, space, prefix, tmp_path) for lang, space, prefix in (
+        ("pl", "home", "/"), ("pl", "courses", "/courses/"), ("pl", "for-employers", "/for-employers/"),
+        ("en", "home", "/en/"), ("en", "courses", "/en/courses/"), ("en", "for-employers", "/en/for-employers/"))]
+    assert search_groups(site, builds) == [
+        ["/", "/courses/"], ["/for-employers/"], ["/en/", "/en/courses/"], ["/en/for-employers/"],
+    ]
+
+
+@pytest.mark.parametrize(("source", "target", "location", "expected"), [
+    ("/courses/", "/", "software-engineering/task-sets/x/#lab-04", "courses/software-engineering/task-sets/x/#lab-04"),
+    ("/", "/courses/", "licensing/#kod-strony", "../licensing/#kod-strony"),
+    ("/", "/courses/", "", "../"),
+    ("/", "/courses/", "#materialy-do-zajec", "../#materialy-do-zajec"),
+    ("/en/courses/", "/en/", "a/", "courses/a/"),
+    ("/en/", "/en/courses/", "licensing/", "../licensing/"),
+])
+def test_relocated_search_entries_point_to_the_same_page(source, target, location, expected):
+    assert relocate(location, source, target) == expected
+    assert normalised(target + expected) == normalised(source + location)
+
+
+@pytest.mark.parametrize("renderer", RENDERERS)
+def test_search_from_any_page_of_a_language_finds_every_searchable_page_of_it(sample, tmp_path, renderer):
+    site_dir = tmp_path / "_site"
+    build_site(load_site(sample), tmp_path / "build", site_dir, renderer=renderer)
+    for group in (["/", "/courses/"], ["/en/", "/en/courses/"]):
+        pages = [sorted({normalised(u) for u in index_entries(site_dir, prefix)}) for prefix in group]
+        assert pages[0] == pages[1], group  # every build of the language sees the same pages
+        for prefix in group:
+            entries = [normalised(u) for u in index_entries(site_dir, prefix)]
+            assert len(entries) == len(set(entries)), f"duplicate entries in {prefix}"
+            assert all(not u.startswith("/en/") for u in entries) if prefix in ("/", "/courses/") else \
+                all(u.startswith("/en/") for u in entries)
+    root, courses = build_index(site_dir, ""), build_index(site_dir, "courses")
+    assert "Temat zastępczy alfa" in root and "Tekst zastępczy strony licencji" in courses
+    assert check_search_indexes(site_dir, [["/", "/courses/"], ["/en/", "/en/courses/"]]) == []
+
+
+@pytest.mark.parametrize("renderer", RENDERERS)
+def test_drafts_and_archived_pages_never_reach_a_search_index(sample, tmp_path, renderer):
+    drafts = tmp_path / "drafts"
+    write(drafts / "pl/courses/sample-course-a/task-sets/09-draft.md",
+          '---\ntitle: "Szkic"\nstatus: published\n---\n\n## Zadania\n\n### Zadanie {#d1}\n\nSzkicowetestowesłowo.\n')
+    site_dir = tmp_path / "_site"
+    build_site(load_site(sample, drafts=drafts), tmp_path / "build", site_dir, renderer=renderer)
+    text = search_text(site_dir)
+    assert "Szkicowetestowesłowo" not in text and "Zarchiwizowanetestowesłowo" not in text
+
+
+@pytest.mark.parametrize("renderer", RENDERERS)
+def test_navigation_script_finds_the_header_buttons_it_makes_focusable(sample, tmp_path, renderer):
+    # On narrow screens the navigation drawer and search open from icon labels that are not focusable.
+    site_dir = tmp_path / "_site"
+    build_site(load_site(sample), tmp_path / "build", site_dir, renderer=renderer)
+    page = _Navigation()
+    page.feed((site_dir / "courses/sample-course-a/index.html").read_text(encoding="utf-8"))
+    targets = {b["for"] for b in page.header_buttons}
+    assert {"__drawer", "__search"} <= targets
+    assert {"__drawer", "__search"} <= page.checkboxes

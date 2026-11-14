@@ -369,7 +369,9 @@ _ConfigDumper.add_representer(_PythonName, lambda dumper, name: dumper.represent
 def _copy_navigation_script(site: Site, lang: str, docs: Path) -> None:
     """The navigation script, with its interface string in the build's language."""
     script = (site.config_dir / "theme" / "navigation.js").read_text(encoding="utf-8")
-    script = script.replace('"__TH_NAV_SECTION_TOGGLE__"', json.dumps(t(site, lang, "nav_section_toggle"), ensure_ascii=False))
+    for placeholder, key in (("__TH_NAV_SECTION_TOGGLE__", "nav_section_toggle"), ("__TH_NAV_DRAWER_BUTTON__", "nav_drawer_button"),
+                             ("__TH_SEARCH_BUTTON__", "search_button")):
+        script = script.replace(f'"{placeholder}"', json.dumps(t(site, lang, key), ensure_ascii=False))
     _write(docs / NAVIGATION_SCRIPT, script)
 
 

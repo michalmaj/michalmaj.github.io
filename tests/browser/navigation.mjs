@@ -64,6 +64,20 @@ for (const view of [{ name: "desktop", width: 1280, height: 900, mobile: false }
   r.afterSecondSpace = { ...(await ax()), ...(await state()) };
   await press("Enter", "Enter", 13, "\r");
   r.afterEnter = { ...(await ax()), ...(await state()) };
+  if (view.mobile) {
+    // Header icon buttons: reachable with Tab, a named button, Enter opens.
+    await open();
+    const header = (sel) => evaluate(`(() => { const b = document.querySelector('${sel}'); const i = document.getElementById(b.htmlFor);
+      b.focus(); return { focused: document.activeElement === b, role: b.getAttribute('role'), name: b.getAttribute('aria-label') || b.textContent.trim(),
+      expanded: b.getAttribute('aria-expanded'), checked: i.checked }; })()`);
+    r.drawerBefore = await header('label.md-header__button[for="__drawer"]');
+    await press("Enter", "Enter", 13, "\r");
+    const drawerState = () => evaluate(`(() => { const b = document.querySelector('label.md-header__button[for="__drawer"]'); return { expanded: b.getAttribute('aria-expanded'), checked: document.getElementById('__drawer').checked }; })()`);
+    r.drawerAfterEnter = await drawerState();
+    await evaluate(`document.querySelector('label.md-header__button[for="__drawer"]').focus(), true`);
+    await press(" ", "Space", 32, " ");
+    r.drawerAfterSpace = await drawerState();
+  }
   result[view.name] = r;
 }
 console.log(JSON.stringify(result));

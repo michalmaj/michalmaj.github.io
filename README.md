@@ -12,6 +12,7 @@ and links to the repositories with code and exercises.
 | `renderer/` | site generator configuration and theme |
 | `src/teaching_hub/` | build pipeline: validation, assembly, rendering and checks |
 | `tests/` | tests and a placeholder fixture that is never published |
+| `docs/` | [how to add and maintain content](docs/adding-content.md) |
 
 ## Build locally
 

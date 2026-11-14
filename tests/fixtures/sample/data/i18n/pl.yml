@@ -8,6 +8,9 @@ nav_licensing: "Licencje"
 nav_catalog: "Przedmioty"
 # Name of the button that expands or collapses a navigation section; {name} is the section.
 nav_section_toggle: "Podsekcje: {name}"
+# Names of the header buttons that open the navigation and the search on narrow screens.
+nav_drawer_button: "Nawigacja"
+search_button: "Szukaj"
 nav_how_to_use: "Jak korzystać"
 task_set: "Zestaw"
 task: "Zadanie"

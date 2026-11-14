@@ -127,3 +127,5 @@ class SpaceConfig(Strict):
     path: str
     site_name_key: str | None = None
     footer_key: str | None = None
+    # Builds of one language whose spaces share a search group share one search index.
+    search_group: str | None = None
