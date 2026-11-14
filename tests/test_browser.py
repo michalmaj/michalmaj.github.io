@@ -63,3 +63,8 @@ def test_section_toggle_is_a_named_button_whose_state_follows_the_keyboard(sampl
             s = r[step]
             assert s["checked"] is expected and s["expanded"] is expected and s["focused"], (view, step, s)
         assert r["afterSpace"]["scrollY"] == initial["scrollY"], (view, r["afterSpace"])
+    drawer = result["phone"]["drawerBefore"]
+    assert drawer["focused"] and drawer["role"] == "button" and drawer["name"], drawer
+    assert drawer["expanded"] == "false" and drawer["checked"] is False, drawer
+    assert result["phone"]["drawerAfterEnter"] == {"expanded": "true", "checked": True}, result["phone"]["drawerAfterEnter"]
+    assert result["phone"]["drawerAfterSpace"] == {"expanded": "false", "checked": False}, result["phone"]["drawerAfterSpace"]

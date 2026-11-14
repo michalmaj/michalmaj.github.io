@@ -150,6 +150,7 @@ class _Navigation(HTMLParser):
         self.checkboxes: set[str] = set()
         self.labelled_navs: set[str] = set()
         self.scripts: list[str] = []
+        self.header_buttons: list[dict] = []
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
@@ -161,6 +162,8 @@ class _Navigation(HTMLParser):
             self.labelled_navs.add(a["aria-labelledby"])
         elif tag == "script" and a.get("src"):
             self.scripts.append(a["src"])
+        if tag == "label" and "md-header__button" in (a.get("class") or "").split() and a.get("for"):
+            self.header_buttons.append(a)
 
 
 @pytest.mark.parametrize("renderer", RENDERERS)
@@ -175,3 +178,15 @@ def test_navigation_script_finds_the_section_toggles_it_makes_accessible(sample,
     for toggle in page.toggles:
         assert toggle["for"] in page.checkboxes
         assert toggle.get("id") in page.labelled_navs
+
+
+@pytest.mark.parametrize("renderer", RENDERERS)
+def test_navigation_script_finds_the_header_buttons_it_makes_focusable(sample, tmp_path, renderer):
+    # On narrow screens the navigation drawer and search open from icon labels that are not focusable.
+    site_dir = tmp_path / "_site"
+    build_site(load_site(sample), tmp_path / "build", site_dir, renderer=renderer)
+    page = _Navigation()
+    page.feed((site_dir / "courses/sample-course-a/index.html").read_text(encoding="utf-8"))
+    targets = {b["for"] for b in page.header_buttons}
+    assert {"__drawer", "__search"} <= targets
+    assert {"__drawer", "__search"} <= page.checkboxes

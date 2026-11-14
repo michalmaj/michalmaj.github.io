@@ -183,11 +183,11 @@ def test_licensing_table_names_every_column(sample, tmp_path):
 
 def test_every_build_loads_the_navigation_script_with_the_toggle_name_in_its_language(sample, tmp_path):
     out, builds = build(sample, tmp_path)
-    expected = {"pl": '"Podsekcje: {name}"', "en": '"Subsections: {name}"'}
+    expected = {"pl": ['"Podsekcje: {name}"', '"Nawigacja"', '"Szukaj"'], "en": ['"Subsections: {name}"', '"Navigation"', '"Search"']}
     for lang, space in builds:
         assert "javascripts/teaching-hub/navigation.js" in config(out, lang, space).get("extra_javascript", []), (lang, space)
         script = (out / lang / space / "docs/javascripts/teaching-hub/navigation.js").read_text(encoding="utf-8")
-        assert expected[lang] in script and "__TH_" not in script, (lang, space)
+        assert all(text in script for text in expected[lang]) and "__TH_" not in script, (lang, space)
 
 
 # ---------------------------------------------------------------- heading anchors
