@@ -151,6 +151,7 @@ class _Navigation(HTMLParser):
         self.labelled_navs: set[str] = set()
         self.scripts: list[str] = []
         self.header_buttons: list[dict] = []
+        self.primary_sidebars = 0
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
@@ -164,6 +165,8 @@ class _Navigation(HTMLParser):
             self.scripts.append(a["src"])
         if tag == "label" and "md-header__button" in (a.get("class") or "").split() and a.get("for"):
             self.header_buttons.append(a)
+        if "md-sidebar--primary" in (a.get("class") or "").split():
+            self.primary_sidebars += 1
 
 
 @pytest.mark.parametrize("renderer", RENDERERS)
@@ -264,3 +267,4 @@ def test_navigation_script_finds_the_header_buttons_it_makes_focusable(sample, t
     targets = {b["for"] for b in page.header_buttons}
     assert {"__drawer", "__search"} <= targets
     assert {"__drawer", "__search"} <= page.checkboxes
+    assert page.primary_sidebars == 1  # the drawer the script makes inert while it is closed
