@@ -165,6 +165,14 @@ def test_course_page_lists_repositories_used_by_published_material(sample, tmp_p
         assert f"[{name}](" in course
 
 
+def test_course_page_repository_list_shows_the_maturity_status(sample, tmp_path):
+    # The course page itself tells students that a repository is still being developed.
+    out, _ = build(sample, tmp_path)
+    course = page(out, "pl", "courses", "sample-course-a/index.md")
+    assert "w rozbudowie" in _line_with(course, "[Deep Learning](")  # maturity in_development
+    assert "w rozbudowie" not in _line_with(course, "[Software Engineering in Practice](")  # not_assessed
+
+
 def test_licensing_page_lists_licenses_of_linked_repositories(sample, tmp_path):
     out, _ = build(sample, tmp_path)
     licensing = page(out, "pl", "home", "licensing.md")

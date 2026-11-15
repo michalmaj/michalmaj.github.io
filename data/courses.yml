@@ -31,3 +31,8 @@ courses:
       pl: "Sztuczna inteligencja i uczenie maszynowe"
     summary:
       pl: "Uczenie maszynowe poznawane interaktywnie: jak modele uczą się na błędach, od odległości do klastrów, od dobrych wyników do wiarygodnych modeli, od cech do decyzji modelu i od reprezentacji do zachowania modelu."
+  - id: deep-learning
+    name:
+      pl: "Deep Learning"
+    summary:
+      pl: "Sieci neuronowe w praktyce z PyTorchem: od podstaw i trenowania sieci, przez sieci konwolucyjne, transfer learning, osadzenia, sieci rekurencyjne i mechanizm uwagi, po autoenkodery, modele dyfuzyjne, ocenę i wdrażanie modeli. Materiały są w rozbudowie."
