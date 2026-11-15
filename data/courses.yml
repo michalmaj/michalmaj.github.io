@@ -26,3 +26,8 @@ courses:
       pl: "Programowanie aplikacji w języku Python"
     summary:
       pl: "Budowa aplikacji w Pythonie na jednym rozwijanym projekcie: walidacja i zapis danych, interfejs wiersza poleceń i raporty, utrzymanie kodu, API oraz zadania wykonywane w tle. Uzupełnieniem są przewodniki po przygotowaniu środowiska i nowoczesnym projekcie w Pythonie."
+  - id: ai-and-machine-learning
+    name:
+      pl: "Sztuczna inteligencja i uczenie maszynowe"
+    summary:
+      pl: "Uczenie maszynowe poznawane interaktywnie: jak modele uczą się na błędach, od odległości do klastrów, od dobrych wyników do wiarygodnych modeli, od cech do decyzji modelu i od reprezentacji do zachowania modelu."

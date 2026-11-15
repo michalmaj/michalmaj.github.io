@@ -12,3 +12,5 @@
 /courses/object-oriented-python/guides/course-materials/
 /courses/python-application-programming/
 /courses/python-application-programming/guides/course-materials/
+/courses/ai-and-machine-learning/
+/courses/ai-and-machine-learning/guides/course-materials/
