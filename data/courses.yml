@@ -11,3 +11,8 @@ courses:
       pl: "Programowanie systemów mechatronicznych"
     summary:
       pl: "Programowanie w C++ na przykładzie symulatora przemysłowej linii sortującej: od narzędzi i podstaw sterowania, przez napęd taśmy, tryby pracy i awaryjny stop, po obsługę usterek, czujniki, scenariusze testowe i projekt końcowy. Ćwiczenia wykonuje się na zwykłym komputerze."
+  - id: data-processing-exploration-analysis
+    name:
+      pl: "Przetwarzanie, eksploracja i analiza danych"
+    summary:
+      pl: "Praca z danymi na realistycznych studiach przypadków: od pytania i przygotowania danych, przez eksplorację i modele bazowe, po ocenę modeli, interpretację wyników i rekomendacje."
