@@ -16,3 +16,13 @@ courses:
       pl: "Przetwarzanie, eksploracja i analiza danych"
     summary:
       pl: "Praca z danymi na realistycznych studiach przypadków: od pytania i przygotowania danych, przez eksplorację i modele bazowe, po ocenę modeli, interpretację wyników i rekomendacje."
+  - id: object-oriented-python
+    name:
+      pl: "Programowanie obiektowe w Pythonie"
+    summary:
+      pl: "Programowanie obiektowe w Pythonie na jednym rozwijanym projekcie gry RPG: porządkowanie kodu za pomocą klas, klas danych, typów wyliczeniowych, adnotacji typów, modułów i testów."
+  - id: python-application-programming
+    name:
+      pl: "Programowanie aplikacji w języku Python"
+    summary:
+      pl: "Budowa aplikacji w Pythonie na jednym rozwijanym projekcie: walidacja i zapis danych, interfejs wiersza poleceń i raporty, utrzymanie kodu, API oraz zadania wykonywane w tle. Uzupełnieniem są przewodniki po przygotowaniu środowiska i nowoczesnym projekcie w Pythonie."
