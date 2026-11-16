@@ -5,6 +5,7 @@
 /courses/software-engineering/
 /courses/software-engineering/task-sets/i-am-a-developer/
 /courses/mechatronic-systems-programming/
+/courses/mechatronic-systems-programming/task-sets/control-basics/
 /courses/mechatronic-systems-programming/guides/course-materials/
 /courses/data-processing-exploration-analysis/
 /courses/data-processing-exploration-analysis/guides/course-materials/
