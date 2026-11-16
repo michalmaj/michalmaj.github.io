@@ -14,6 +14,7 @@
 /courses/object-oriented-python/task-sets/world-1-objects/
 /courses/object-oriented-python/guides/course-materials/
 /courses/python-application-programming/
+/courses/python-application-programming/task-sets/world-1-trusted-data/
 /courses/python-application-programming/guides/course-materials/
 /courses/ai-and-machine-learning/
 /courses/ai-and-machine-learning/guides/course-materials/
