@@ -163,9 +163,9 @@ walidacji dla trzech złych przykładów zapisanych w `task.py`.
 **Sprawdź się:**
 `uv run python level_3_validation_and_persistence/missions/02_pydantic_monster_config/check.py`.
 Skrypt sprawdza oba modele na przykładach zapisanych w samym skrypcie. Dla potwora: wczytanie
-poprawnego wpisu przez klucz `def` i jego wartości oraz odrzucenie `hp` równego -50 i 0, braku
-`hp`, `atk` równego 0 i ujemnego `gold`. Dla broni: wartości poprawnego wpisu oraz odrzucenie
-ujemnych `atk_bonus` i `price` i braku `name`. Nie sprawdza `populate_by_name`, ujemnego `def`,
+poprawnego wpisu przez klucz `def` z wartościami `hp`, `atk`, `def_` i `gold` oraz odrzucenie `hp`
+równego -50 i 0, braku `hp`, `atk` równego 0 i ujemnego `gold`. Dla broni: wartości `atk_bonus` i
+`price` poprawnego wpisu oraz odrzucenie ujemnych `atk_bonus` i `price` i braku `name`. Nie sprawdza `populate_by_name`, ujemnego `def`,
 odkomentowania `main()` ani zadania pobocznego.
 
 ### Load Game Catalogs: od pliku JSON do obiektów gry {#misja-03}
