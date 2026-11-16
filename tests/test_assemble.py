@@ -445,6 +445,20 @@ def test_a_published_guide_is_enough_material(sample, tmp_path):
     assert (out / "pl/courses/docs/sample-course-b/guides/overview.md").is_file()
 
 
+def test_course_page_without_repositories_has_no_repository_section(sample, tmp_path):
+    # Course B has only a guide that uses no repository, like courses that need no repository at all.
+    out, _ = build(sample, tmp_path)
+    course = page(out, "pl", "courses", "sample-course-b/index.md")
+    assert "[Strona informacyjna zastępcza B](guides/overview.md)" in course
+    assert "Wykorzystywane materiały" not in course
+
+
+def test_repository_catalog_does_not_link_a_course_without_repositories(sample, tmp_path):
+    with_catalog(sample)
+    out, _ = build(sample, tmp_path)
+    assert "sample-course-b" not in page(out, "pl", "courses", "repositories.md")
+
+
 def test_course_needs_a_description_in_each_language(sample, tmp_path):
     replace_in(sample / "data/courses.yml", '      en: "Placeholder description of course A."\n', "")
     out, builds = build(sample, tmp_path)
