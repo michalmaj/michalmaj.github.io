@@ -115,6 +115,14 @@ def test_task_id_is_unique_within_set(sample):
     assert "duplicate-task-id" in error_codes(run(sample))
 
 
+def test_task_set_may_have_a_section_of_its_own_before_the_tasks(sample):
+    # A set can prepare the work in a section that is not one of the standard ones.
+    replace_in(sample / ALPHA_PL, "## Wymagania wstępne", "## Przygotowanie do zestawu")
+    issues = run(sample)
+    assert error_codes(issues) == set()
+    assert warning_codes(issues) == set()
+
+
 # ---------------------------------------------------------------- local paths: link targets only
 
 ALLOWED_IN_TEXT = """Uruchom serwer i otwórz http://localhost:8000 albo http://127.0.0.1:8000/docs.

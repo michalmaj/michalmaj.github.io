@@ -120,6 +120,30 @@ def test_set_materials_section_is_inserted_before_tasks(sample, tmp_path):
     assert alpha.index("## Materiały") < alpha.index(start_here) < alpha.index("## Zadania")
 
 
+def test_set_materials_go_into_the_sets_own_materials_section_after_its_preparation(sample, tmp_path):
+    replace_in(sample / "content/pl/courses/sample-course-a/task-sets/01-alpha.md",
+               "## Wymagania wstępne\n\nTekst zastępczy wymagań.\n",
+               "## Przygotowanie do zestawu\n\nTekst przygotowania.\n\n## Materiały\n\nKomentarz do materiałów.\n")
+    out, _ = build(sample, tmp_path)
+    alpha = page(out, "pl", "courses", "sample-course-a/task-sets/alpha.md")
+    start_here = "software-engineering-in-practice/blob/main/START-HERE.pl.md"
+    assert alpha.count("## Materiały") == 1
+    assert (alpha.index("## Przygotowanie do zestawu") < alpha.index("Tekst przygotowania.") < alpha.index("## Materiały")
+            < alpha.index(start_here) < alpha.index("Komentarz do materiałów.") < alpha.index("## Zadania"))
+
+
+def test_material_with_a_tag_and_no_path_links_to_the_tag(sample, tmp_path):
+    replace_in(sample / "content/pl/courses/sample-course-a/task-sets/01-alpha.md",
+               '    label: "Etykieta zastępcza 1"\n',
+               '    label: "Etykieta zastępcza 1"\n  - repository: mechatronic-systems-programming\n'
+               '    ref: module-01-start\n    lang: pl\n    label: "Kod startowy"\n')
+    out, _ = build(sample, tmp_path)
+    alpha = page(out, "pl", "courses", "sample-course-a/task-sets/alpha.md")
+    line = _line_with(alpha, "[Kod startowy](")
+    assert "[Kod startowy](https://github.com/michalmaj/mechatronic-systems-programming/tree/module-01-start)" in line
+    assert "`module-01-start`" in line
+
+
 def test_archived_set_keeps_its_page_but_leaves_nav_lists_and_search(sample, tmp_path):
     out, _ = build(sample, tmp_path)
     beta = page(out, "pl", "courses", "sample-course-a/task-sets/beta.md")
@@ -379,6 +403,15 @@ def test_catalog_renders_each_visible_course_as_a_card(sample, tmp_path):
     assert '<div class="th-cards" markdown>' in catalog
     assert '<div class="th-card" markdown>\n\n## [Przedmiot przykładowy A](sample-course-a/index.md)' in catalog
     assert catalog.count('<div class="th-card" markdown>') == 2
+
+
+def test_catalog_card_counts_only_the_published_task_sets(sample, tmp_path):
+    out, _ = build(sample, tmp_path)
+    catalog = page(out, "pl", "courses", "index.md")
+    card_a = catalog[catalog.index("## [Przedmiot przykładowy A]"):catalog.index("## [Przedmiot przykładowy B]")]
+    card_b = catalog[catalog.index("## [Przedmiot przykładowy B]"):]
+    assert "liczba zestawów: 1" in card_a  # alpha is published, beta is archived
+    assert "liczba zestawów: 0" in card_b  # a guide is not a task set
 
 
 def test_course_page_renders_task_sets_as_cards_with_their_number(sample, tmp_path):
