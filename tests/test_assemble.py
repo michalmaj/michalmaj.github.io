@@ -235,6 +235,19 @@ def test_repository_catalog_links_only_published_courses_that_use_a_repository(s
     assert "sample-course-c" not in catalog and "sample-course-d" not in catalog
 
 
+def test_repository_card_lists_every_published_course_that_uses_it_in_catalog_order(sample, tmp_path):
+    with_catalog(sample)
+    # Course B's guide uses the same repository as course A, so the card links both courses.
+    replace_in(sample / "content/pl/courses/sample-course-b/guides/overview.md", "status: published\n",
+               'status: published\nmaterials:\n  - repository: software-engineering-in-practice\n'
+               '    lang: pl\n    label: "x"\n')
+    out, _ = build(sample, tmp_path)
+    catalog = page(out, "pl", "courses", "repositories.md")
+    se = catalog[catalog.index("## [Software Engineering in Practice]"):catalog.index("## [Programowanie systemów mechatronicznych]")]
+    assert ("Przedmioty: [Przedmiot przykładowy A](sample-course-a/index.md), "
+            "[Przedmiot przykładowy B](sample-course-b/index.md)") in se
+
+
 def test_no_repository_catalog_without_its_page_text(sample, tmp_path):
     out, _ = build(sample, tmp_path)
     assert not (out / "pl/courses/docs/repositories.md").exists()

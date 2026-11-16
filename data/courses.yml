@@ -35,4 +35,9 @@ courses:
     name:
       pl: "Deep Learning"
     summary:
-      pl: "Sieci neuronowe w praktyce z PyTorchem: od podstaw i trenowania sieci, przez sieci konwolucyjne, transfer learning, osadzenia, sieci rekurencyjne i mechanizm uwagi, po autoenkodery, modele dyfuzyjne, ocenę i wdrażanie modeli. Materiały są w rozbudowie."
+      pl: "Sieci neuronowe w praktyce z PyTorchem: od podstaw i trenowania sieci, przez sieci konwolucyjne, transfer learning, osadzenia, sieci rekurencyjne, mechanizm uwagi i modele językowe, po autoenkodery, modele dyfuzyjne, ocenę i wdrażanie modeli. Materiały są w rozbudowie."
+  - id: introduction-to-ai
+    name:
+      pl: "Podstawy sztucznej inteligencji"
+    summary:
+      pl: "Wprowadzenie do podstawowych pojęć i metod sztucznej inteligencji."

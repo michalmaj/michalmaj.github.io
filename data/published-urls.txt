@@ -16,3 +16,5 @@
 /courses/ai-and-machine-learning/guides/course-materials/
 /courses/deep-learning/
 /courses/deep-learning/guides/course-materials/
+/courses/introduction-to-ai/
+/courses/introduction-to-ai/guides/supplementary-demos/
