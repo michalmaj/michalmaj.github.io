@@ -93,3 +93,46 @@ def test_a_repository_linked_only_in_page_text_is_cloned_for_the_check(sample):
     assert "deep-learning" in [repo.id for repo in referenced_repositories(site)]
     issues = check_materials(site, FakeResolver(unavailable={"deep-learning"}))
     assert warning_codes(issues) == {"repository-link-unverified"}
+
+
+# ---------------------------------------------------------------- solutions and reference answers
+
+import re  # noqa: E402
+
+from conftest import REPO, replace_in  # noqa: E402
+from teaching_hub.mdtools import link_targets  # noqa: E402
+
+# Source repositories keep solutions, model answers and rubrics in public. The site sends students
+# to the instructions and never links those files or tags directly.
+ANSWERS = re.compile(r"solution|exemplar|rubric", re.I)
+ALPHA = "content/pl/courses/sample-course-a/task-sets/01-alpha.md"
+
+
+def answer_links(root) -> list[tuple[str, str]]:
+    """(page, target) for each material or link in page text that leads to a solution or a reference answer."""
+    found = []
+    for doc in load_site(root).docs:
+        targets = link_targets(doc.body)
+        if doc.meta is not None:
+            materials = list(getattr(doc.meta, "materials", []))
+            for task in getattr(doc.meta, "tasks", {}).values():
+                materials += task.materials
+            for m in materials:
+                targets += [v for v in (getattr(m, "path", None), getattr(m, "ref", None), getattr(m, "url", None)) if v]
+        found += [(doc.rel, target) for target in targets if ANSWERS.search(target)]
+    return found
+
+
+def test_published_content_links_no_solutions_or_reference_answers():
+    assert answer_links(REPO) == []
+
+
+def test_a_material_or_a_link_leading_to_an_answer_is_noticed(sample):
+    rubric = "https://github.com/michalmaj/data-science-casebook/blob/main/ASSESSMENT_RUBRIC.pl.md"
+    assert answer_links(sample) == []
+    replace_in(sample / ALPHA, "path: labs/01-workstation/README.pl.md", "path: labs/01-workstation/solution.py")
+    replace_in(sample / ALPHA, "ref: module-01-start", "ref: module-01-solution")
+    replace_in(sample / ALPHA, "Tekst zastępczy czynności. Zobacz", f"[Rubryka]({rubric}). Zobacz")
+    assert sorted(answer_links(sample)) == [
+        (ALPHA, rubric), (ALPHA, "labs/01-workstation/solution.py"), (ALPHA, "module-01-solution"),
+    ]

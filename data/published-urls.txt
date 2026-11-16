@@ -8,6 +8,7 @@
 /courses/mechatronic-systems-programming/task-sets/control-basics/
 /courses/mechatronic-systems-programming/guides/course-materials/
 /courses/data-processing-exploration-analysis/
+/courses/data-processing-exploration-analysis/task-sets/case-1-regression/
 /courses/data-processing-exploration-analysis/guides/course-materials/
 /courses/object-oriented-python/
 /courses/object-oriented-python/guides/course-materials/
