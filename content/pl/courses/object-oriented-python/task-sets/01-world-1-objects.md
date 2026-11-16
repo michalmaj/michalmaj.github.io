@@ -128,9 +128,9 @@ tworzy osobny obiekt. Nie sprawdza zadania pobocznego (`__repr__`).
 nich.
 
 **Sprawdź się:** `uv run python level_2_oop_and_design/missions/02_monster_class/check.py`. Skrypt
-sprawdza atrybuty trzech potworów, wynik `is_alive()` przy HP równym 1 i 0 oraz działanie
-`take_damage`, także to, że HP zatrzymuje się na 0. Nie sprawdza zadań pobocznych (`__repr__`,
-`description()`).
+sprawdza wszystkie atrybuty goblina, nazwy i HP orka i smoka, wynik `is_alive()` przy HP równym 1
+i 0 oraz działanie `take_damage`, także to, że HP zatrzymuje się na 0. Nie sprawdza pozostałych
+wartości orka i smoka ani zadań pobocznych (`__repr__`, `description()`).
 
 ### Character Base: wspólna klasa bazowa {#misja-03}
 
@@ -152,9 +152,10 @@ Obie podklasy wywołują `super().__init__(name, hp, atk, def_)`.
 pokazuje, że jego HP zatrzymuje się na 0.
 
 **Sprawdź się:** `uv run python level_2_oop_and_design/missions/03_character_base/check.py`. Skrypt
-sprawdza klasę bazową, to, że `Hero` i `Monster` dziedziczą po `Character` i wywołują jej
-`__init__` zamiast powtarzać przypisania, ich dodatkowe atrybuty i odziedziczone metody. Nie
-sprawdza zadania pobocznego (`roll_damage`).
+sprawdza w klasie bazowej `name`, `hp`, `is_alive()` i `take_damage` (HP nie spada poniżej 0). U
+podklas sprawdza, że `Hero` i `Monster` dziedziczą po `Character` i wywołują jej `__init__` zamiast
+powtarzać przypisania, a także ich dodatkowe atrybuty i odziedziczone metody. Nie sprawdza `atk`
+ani `def_` ani zadania pobocznego (`roll_damage`).
 
 ### Arena Roster: projekt zamykający etap {#arena-roster}
 
@@ -196,7 +197,7 @@ wypisywanych linii. Te elementy porównaj samodzielnie ze specyfikacją i przyk�
 ## Oczekiwane rezultaty
 
 - `check.py` misji 01–03 i projektu Arena Roster kończy się komunikatem o ukończeniu.
-- Uruchomione pliki `task.py` misji 01–03 wypisują to, co opisują ich instrukcje.
+- Pliki `task.py` misji 01–03 uruchamiają się bez błędów i wypisują wyniki opisane przy zadaniach.
 - W projekcie Arena Roster `print_roster()` wypisuje listę postaci zgodną ze specyfikacją z
   instrukcji.
 
