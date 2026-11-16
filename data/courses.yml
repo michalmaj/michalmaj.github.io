@@ -41,3 +41,18 @@ courses:
       pl: "Podstawy sztucznej inteligencji"
     summary:
       pl: "Wprowadzenie do podstawowych pojęć i metod sztucznej inteligencji."
+  - id: engineering-project
+    name:
+      pl: "Projekt inżynierski"
+    summary:
+      pl: "Praktyczne wskazówki do projektu inżynierskiego: od określenia problemu i zakresu, przez projekt, implementację i weryfikację rozwiązania, po dokumentowanie decyzji i prezentację rezultatów."
+  - id: diploma-seminar
+    name:
+      pl: "Seminarium dyplomowe"
+    summary:
+      pl: "Praktyczne wskazówki do pracy dyplomowej: od tematu i celu, przez źródła, strukturę i argumentację, po wnioski i prezentację wyników."
+  - id: masters-seminar
+    name:
+      pl: "Seminarium magisterskie"
+    summary:
+      pl: "Praktyczne wskazówki do pracy badawczej: od problemu i pytań badawczych, przez stan wiedzy, dobór metod i sposób weryfikacji, po analizę wyników, odtwarzalność i wnioski."

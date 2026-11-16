@@ -18,3 +18,9 @@
 /courses/deep-learning/guides/course-materials/
 /courses/introduction-to-ai/
 /courses/introduction-to-ai/guides/supplementary-demos/
+/courses/engineering-project/
+/courses/engineering-project/guides/project-guide/
+/courses/diploma-seminar/
+/courses/diploma-seminar/guides/seminar-guide/
+/courses/masters-seminar/
+/courses/masters-seminar/guides/research-guide/
