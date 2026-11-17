@@ -103,8 +103,15 @@ from conftest import REPO, replace_in  # noqa: E402
 from teaching_hub.mdtools import link_targets  # noqa: E402
 
 # Source repositories keep solutions, model answers and rubrics in public. The site sends students
-# to the instructions and never links those files or tags directly.
-ANSWERS = re.compile(r"solution|exemplar|rubric", re.I)
+# to the instructions and never links those files or tags directly. "solution" counts as a name:
+# a path segment that starts with it (solution.py, solutions/) or ends with it (module-01-solution,
+# final-project-solution-v3), not any word that contains it (05_choosing_k_comparing_solutions).
+ANSWERS = re.compile(
+    r"(?:^|[/#?])solutions?(?:[._-][^/#?]*)?(?=$|[/#?])"  # a segment named solution, solutions, solution.py ...
+    r"|[-_.]solution(?=$|[-_./#?])"  # ... or a name ending in -solution / _solution, also with a suffix
+    r"|exemplar|rubric",
+    re.I,
+)
 ALPHA = "content/pl/courses/sample-course-a/task-sets/01-alpha.md"
 
 
@@ -136,3 +143,14 @@ def test_a_material_or_a_link_leading_to_an_answer_is_noticed(sample):
     assert sorted(answer_links(sample)) == [
         (ALPHA, rubric), (ALPHA, "labs/01-workstation/solution.py"), (ALPHA, "module-01-solution"),
     ]
+
+
+def test_answers_are_recognised_by_name_not_by_any_word_containing_solution(sample):
+    # A lesson about comparing clustering solutions is an instruction, not an answer.
+    lesson = "cases/case_3_clustering/lessons/05_choosing_k_comparing_solutions/README.pl.md"
+    replace_in(sample / ALPHA, "path: labs/01-workstation/README.pl.md", f"path: {lesson}")
+    assert answer_links(sample) == []
+    # Answer folders and versioned solution tags are still noticed.
+    replace_in(sample / ALPHA, f"path: {lesson}", "path: labs/solutions/01-workstation.md")
+    replace_in(sample / ALPHA, "ref: module-01-start", "ref: final-project-solution-v3")
+    assert sorted(answer_links(sample)) == [(ALPHA, "final-project-solution-v3"), (ALPHA, "labs/solutions/01-workstation.md")]
