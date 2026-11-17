@@ -12,6 +12,8 @@
 /courses/data-processing-exploration-analysis/guides/course-materials/
 /courses/object-oriented-python/
 /courses/object-oriented-python/task-sets/world-1-objects/
+/courses/object-oriented-python/task-sets/world-2-design/
+/courses/object-oriented-python/task-sets/world-3-structure/
 /courses/object-oriented-python/guides/course-materials/
 /courses/python-application-programming/
 /courses/python-application-programming/task-sets/world-1-trusted-data/
