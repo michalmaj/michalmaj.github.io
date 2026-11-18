@@ -213,7 +213,10 @@ punkcie, faktyczny wynik jednego laboratorium z zakresu 11–19.
 odzwierciedla rzeczywisty stan, a nie domyślne „tak”.
 
 **Sprawdź się:** sekcja „Weryfikacja” sprawdza, czy plik istnieje, i liczy w nim pola wyboru;
-wynik ma mieścić się w zakresie 5–8. Tego, czy kryteria są naprawdę sprawdzalne i czy ocena
+wynik ma mieścić się w zakresie 5–8. Polecenie liczy wszystkie pola wyboru w pliku, także te użyte
+do zapisania samooceny. Jeżeli wynik przekroczy 8, sprawdź ręcznie liczbę właściwych kryteriów —
+większa liczba nie musi oznaczać błędu w wykonanej pracy. Tego, czy kryteria są naprawdę
+sprawdzalne i czy ocena
 odpowiada rzeczywistości, nie sprawdza żadne polecenie. Pomagają w tym pytania z sekcji
 „Zastanów się”.
 
