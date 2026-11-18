@@ -8,6 +8,7 @@
 /courses/software-engineering/task-sets/software-must-survive-change/
 /courses/software-engineering/task-sets/you-do-not-work-alone/
 /courses/software-engineering/task-sets/the-system-lives-in-a-larger-world/
+/courses/software-engineering/task-sets/you-are-the-engineering-team/
 /courses/mechatronic-systems-programming/
 /courses/mechatronic-systems-programming/task-sets/control-basics/
 /courses/mechatronic-systems-programming/guides/course-materials/
