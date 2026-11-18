@@ -109,7 +109,9 @@ manifest projektu odpowiadają kryteriom akceptacji dla Twojej ścieżki.
 odniesienia poleceniem `diff` i sprawdza ślad zmiany w projekcie: brak `bill.py`, obecność `go.mod`
 albo przechodzące `./gradlew test`, które przy braku testów kończy się sukcesem. W ścieżce Java
 punkt odniesienia zapisany w kroku 1 bez opcji `--quiet` zawiera komunikaty Gradle, a weryfikacja
-porównuje go z wynikiem uruchomionym z `--quiet`. Jak mówi krok 7 instrukcji, komunikaty Gradle nie
+porównuje go z wynikiem uruchomionym z `--quiet`. Dlatego `diff` z sekcji „Weryfikacja” może pokazać
+różnicę i nie wypisać `IDENTICAL` nawet przy poprawnej refaktoryzacji, bo porównywane wyniki różnią
+się komunikatami Gradle. Jak mówi krok 7 instrukcji, komunikaty Gradle nie
 są częścią wyniku programu: porównuj sam rachunek, od wiersza `Receipt`, albo od początku zapisuj
 oba wyniki z `--quiet`.
 

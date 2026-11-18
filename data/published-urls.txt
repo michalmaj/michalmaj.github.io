@@ -7,6 +7,7 @@
 /courses/software-engineering/task-sets/code-is-not-yet-a-project/
 /courses/software-engineering/task-sets/software-must-survive-change/
 /courses/software-engineering/task-sets/you-do-not-work-alone/
+/courses/software-engineering/task-sets/the-system-lives-in-a-larger-world/
 /courses/mechatronic-systems-programming/
 /courses/mechatronic-systems-programming/task-sets/control-basics/
 /courses/mechatronic-systems-programming/guides/course-materials/
