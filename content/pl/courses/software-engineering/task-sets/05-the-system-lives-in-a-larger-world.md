@@ -194,10 +194,11 @@ zamiennikiem, który zawsze zawodzi, i z zerowym odstępem.
 `201`, a zamówienie da się potem pobrać.
 
 **Sprawdź się:** sekcja „Weryfikacja” uruchamia testy. To, że żaden test nie czeka naprawdę, widać
-tylko po czasie ich działania. W Javie czas pierwszego testu w raporcie Gradle obejmuje też
-jednorazowe przygotowanie, na przykład klienta HTTP i sterownika SQLite, więc sam nie świadczy o
-prawdziwym odstępie. Działania z prawdziwym odstępem 0,2 s nie sprawdza żaden test: testy celowo
-przekazują odstęp `0`.
+tylko po czasie ich działania, a ten obejmuje też obsługę serwera testowego. W Pythonie fixture z
+projektu startowego zatrzymuje serwer po każdym teście HTTP przez około 0,5 s. W Javie czas
+pierwszego testu w raporcie Gradle obejmuje jednorazowe przygotowanie, na przykład klienta HTTP i
+sterownika SQLite. Sam czas nie świadczy więc o prawdziwym odstępie. Działania z prawdziwym odstępem
+0,2 s nie sprawdza żaden test: testy celowo go pomijają.
 
 ### Produkcja mówi „to nie działa” {#lab-24}
 
