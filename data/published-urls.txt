@@ -17,6 +17,8 @@
 /courses/mechatronic-systems-programming/task-sets/estop/
 /courses/mechatronic-systems-programming/task-sets/sensors/
 /courses/mechatronic-systems-programming/task-sets/fault-mode/
+/courses/mechatronic-systems-programming/task-sets/multiple-items/
+/courses/mechatronic-systems-programming/task-sets/scripted-scenarios/
 /courses/mechatronic-systems-programming/guides/course-materials/
 /courses/data-processing-exploration-analysis/
 /courses/data-processing-exploration-analysis/task-sets/case-1-regression/
