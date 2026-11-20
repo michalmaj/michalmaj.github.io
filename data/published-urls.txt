@@ -37,6 +37,9 @@
 /courses/python-application-programming/task-sets/world-2-persistence/
 /courses/python-application-programming/task-sets/world-3-integration/
 /courses/python-application-programming/task-sets/data-recall-checkpoint/
+/courses/python-application-programming/task-sets/world-1-command-line-interface/
+/courses/python-application-programming/task-sets/world-2-logging-and-observability/
+/courses/python-application-programming/task-sets/world-3-user-facing-output/
 /courses/python-application-programming/guides/course-materials/
 /courses/ai-and-machine-learning/
 /courses/ai-and-machine-learning/guides/course-materials/
