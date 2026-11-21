@@ -43,6 +43,9 @@
 /courses/python-application-programming/task-sets/world-1-static-analysis/
 /courses/python-application-programming/task-sets/world-2-testing/
 /courses/python-application-programming/task-sets/world-3-ci-cd-and-polish/
+/courses/python-application-programming/task-sets/world-1-http-basics/
+/courses/python-application-programming/task-sets/world-2-structure-and-di/
+/courses/python-application-programming/task-sets/world-3-quality-and-polish/
 /courses/python-application-programming/guides/course-materials/
 /courses/ai-and-machine-learning/
 /courses/ai-and-machine-learning/guides/course-materials/
