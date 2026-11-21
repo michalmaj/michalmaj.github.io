@@ -134,8 +134,10 @@ Skrypt zapisuje i wczytuje bohatera w katalogu tymczasowym i sprawdza:
 Nie sprawdza ograniczeń pól modelu ani zamiany błędu walidacji, na przykład napisu w `hp`, na
 `ValueError`. Nie sprawdza też tworzenia brakującego katalogu, bo katalog tymczasowy już istnieje.
 Ten brak widać przy uruchomieniu `task.py`, dopóki w katalogu misji nie ma katalogu `saves/`.
-Skrypt oczekuje `schema_version` równego 1. Jeśli po części „Fix it” zostawisz
-`CURRENT_SCHEMA_VERSION = 2`, zgłosi błąd „schema_version should be 1, got 2”.
+Skrypt `check.py` oczekuje wersji schematu 1. Uruchom sprawdzenie przed eksperymentem „Fix it”,
+który podnosi wersję schematu do 2. Po wykonaniu eksperymentu skrypt może zgłaszać błąd z powodu
+różnicy wersji, a nie niepoprawnego mechanizmu zapisu. Komunikat brzmi wtedy „schema_version should
+be 1, got 2”.
 
 ### Repository Pattern: zapis za wspólnym interfejsem {#misja-05}
 
