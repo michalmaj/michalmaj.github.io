@@ -192,8 +192,15 @@ instalują ich w repozytorium. Instalację hooka obejmuje projekt Full Release P
 wywołanie w `task.py`, łącząc je w jeden wiersz. Wypisuje wtedy „files were modified by this hook”
 i kończy się wynikiem Failed. Drugie uruchomienie przechodzi i przy wszystkich trzech hookach
 wypisuje „Passed”. Tak było w kontroli z wersjami hooków z instrukcji i z nowszymi. To samo dotyczy
-pierwszego uruchomienia `check.py`. Część „Break It” każe zmienić typ wyniku `compute_damage()` na
-`str`. Hook mypy zgłasza wtedy niezgodność typów. Część „Fix It” cofa zmianę.
+pierwszego uruchomienia `check.py`.
+
+Pierwsze uruchomienie hooków może zakończyć się wynikiem `Failed`, ponieważ `ruff-format` zmienia
+formatowanie pliku `task.py`. Nie oznacza to samo w sobie błędu implementacji. Przejrzyj zmianę
+poleceniem `git diff level_5_maintainability/missions/08_pre_commit/task.py`, a następnie uruchom
+hooki ponownie.
+
+Część „Break It” każe zmienić typ wyniku `compute_damage()` na `str`. Hook mypy zgłasza wtedy
+niezgodność typów. Część „Fix It” cofa zmianę.
 
 **Sprawdź się:** `uv run python level_5_maintainability/missions/08_pre_commit/check.py`. Skrypt
 sprawdza:

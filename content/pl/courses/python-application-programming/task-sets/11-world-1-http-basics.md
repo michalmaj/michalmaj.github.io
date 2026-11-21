@@ -96,10 +96,10 @@ Polecenie `uv run python check.py` z instrukcji, wpisane w katalogu zadania, te�
 **Serwer lokalny.** Instrukcje każą uruchomić aplikację serwerem uvicorn i obejrzeć ją w
 przeglądarce. Serwer uruchamiasz w katalogu zadania, bo napis `task:app` wskazuje obiekt `app` w
 pliku `task.py` z bieżącego katalogu. Serwer zajmuje terminal do chwili zatrzymania, więc uruchom go
-w osobnym oknie terminala. Dla misji 01:
+w osobnym oknie terminala. Dla misji 01 najpierw przejdź do katalogu misji poleceniem
+`cd level_6_api/missions/01_first_fastapi_app`, a potem uruchom serwer:
 
 ```bash
-cd level_6_api/missions/01_first_fastapi_app
 uv run uvicorn task:app --reload
 ```
 
@@ -169,8 +169,9 @@ kroków instrukcji:
    `_service.get_available_monsters()`.
 4. Uruchom serwer i otwórz `/docs`.
 
+Po przejściu do katalogu misji poleceniem `cd level_6_api/missions/01_first_fastapi_app`:
+
 ```bash
-cd level_6_api/missions/01_first_fastapi_app
 uv run uvicorn task:app --reload
 ```
 
@@ -207,10 +208,10 @@ Według niej:
    `create_hero()`, przeprowadza walkę przez `_service.simulate()` i zwraca `BattleResultOut`. W
    dekoratorze ma `response_model=BattleResultOut`.
 
-Serwer uruchamiasz w katalogu misji tak jak w misji 01:
+Serwer uruchamiasz tak jak w misji 01, po przejściu do katalogu misji poleceniem
+`cd level_6_api/missions/02_request_response_schemas`:
 
 ```bash
-cd level_6_api/missions/02_request_response_schemas
 uv run uvicorn task:app --reload
 ```
 
@@ -249,8 +250,9 @@ instrukcji:
    `_service.simulate()`, a wynik zamieniasz na `BattleResultOut`. Błąd `ValueError` dla
    nieznanego potwora zamieniasz na `HTTPException` z kodem 404.
 
+Po przejściu do katalogu misji poleceniem `cd level_6_api/missions/03_routes_call_services`:
+
 ```bash
-cd level_6_api/missions/03_routes_call_services
 uv run uvicorn task:app --reload
 ```
 
@@ -297,8 +299,9 @@ przyjmuje nazwę potwora tylko małymi literami: `"goblin"`, `"orc"` albo `"drag
 także `"Goblin"`, walidacja Pydantic odrzuca kodem 422, zanim wykona się kod endpointu. Instrukcja
 wyjaśnia, czym ten przypadek różni się od kodu 404 dla zasobu, którego nie znaleziono.
 
+Po przejściu do katalogu projektu poleceniem `cd level_6_api/projects/01_battle_preview_api`:
+
 ```bash
-cd level_6_api/projects/01_battle_preview_api
 uv run uvicorn task:app --reload
 ```
 
