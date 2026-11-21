@@ -71,10 +71,10 @@ repozytorium potworów w pamięci, bez pliku danych.
 **Polecenia.** Polecenia `check.py` wpisujesz w katalogu głównym repozytorium, tak jak w zestawie
 11. Moduły pakietu importują się nawzajem z przedrostkiem `task.`, na przykład
 `from task.config import DATA_DIR`. Serwer uruchamiasz w katalogu zadania, w osobnym oknie
-terminala, i wskazujesz obiekt `app` w module `task.main`. Dla misji 04:
+terminala, i wskazujesz obiekt `app` w module `task.main`. Dla misji 04 najpierw przejdź do
+katalogu misji poleceniem `cd level_6_api/missions/04_api_routers`, a potem uruchom serwer:
 
 ```bash
-cd level_6_api/missions/04_api_routers
 uv run uvicorn task.main:app --reload
 ```
 
@@ -120,8 +120,9 @@ aplikacji w `task/main.py`.
    obu modułów, ze schematami z zestawu 11 i ze ścieżką `DATA_DIR` z `task.config`.
 3. W `task/main.py` odkomentuj import routerów i dwa wywołania `app.include_router()`.
 
+Po przejściu do katalogu misji poleceniem `cd level_6_api/missions/04_api_routers`:
+
 ```bash
-cd level_6_api/missions/04_api_routers
 uv run uvicorn task.main:app --reload
 ```
 
@@ -161,8 +162,10 @@ każdego kroku. Według niej:
 3. W `sessions.py` dodaj `POST /sessions`, który zwraca kod 201 i `session_id`, oraz
    `GET /sessions/{session_id}`, który zwraca zapisany wynik walki albo 404.
 
+Po przejściu do katalogu misji poleceniem
+`cd level_6_api/missions/05_dependencies_and_repositories`:
+
 ```bash
-cd level_6_api/missions/05_dependencies_and_repositories
 uv run uvicorn task.main:app --reload
 ```
 
@@ -220,8 +223,10 @@ pracę na pięć zadań:
 Schemat `MonsterOut` w tej misji ma pole `defense` zamiast `def_`. Instrukcja wyjaśnia, dlaczego
 zmiana nazwy należy do granicy między schematem API a klasą domeny.
 
+Po przejściu do katalogu misji poleceniem
+`cd level_6_api/missions/06_api_errors_and_status_codes`:
+
 ```bash
-cd level_6_api/missions/06_api_errors_and_status_codes
 uv run uvicorn task.main:app --reload
 ```
 
@@ -274,8 +279,9 @@ oznacza jako gotowe moduły `main.py`, `schemas.py` (`MonsterOut` i `DifficultyO
 
 Router ma korzystać z `Depends(get_monster_repo)` i nie może mieć słownika na poziomie modułu.
 
+Po przejściu do katalogu projektu poleceniem `cd level_6_api/projects/02_monster_catalog_api`:
+
 ```bash
-cd level_6_api/projects/02_monster_catalog_api
 uv run uvicorn task.main:app --reload
 ```
 

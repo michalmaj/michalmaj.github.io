@@ -147,10 +147,10 @@ testami. Według kroków instrukcji:
 3. Dodaj `summary=` do co najmniej trzech endpointów w modułach routerów.
 4. Otwórz `/docs`.
 
-Instrukcja uruchamia serwer poleceniem `fastapi dev`, w katalogu misji:
+Instrukcja uruchamia serwer poleceniem `fastapi dev` w katalogu misji. Po przejściu do niego
+poleceniem `cd level_6_api/missions/08_openapi_and_api_polish`:
 
 ```bash
-cd level_6_api/missions/08_openapi_and_api_polish
 uv run fastapi dev task/main.py
 ```
 
@@ -219,10 +219,10 @@ Instrukcja podaje te polecenia w katalogu projektu: `uv run pytest tests/test_ap
 konfiguracji z `pyproject.toml` repozytorium, tak jak skrypt projektu.
 
 Instrukcja nie podaje polecenia, które uruchamia serwer tego projektu. Wzór z zestawu 12 działa w
-katalogu projektu z modułem `rpg.api.main`:
+katalogu projektu z modułem `rpg.api.main`. Po przejściu do katalogu projektu poleceniem
+`cd level_6_api/projects/03_rpg_battle_api`:
 
 ```bash
-cd level_6_api/projects/03_rpg_battle_api
 uv run uvicorn rpg.api.main:app --reload
 ```
 
