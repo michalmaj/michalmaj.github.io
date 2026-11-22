@@ -144,14 +144,16 @@ Na tej ścieżce trzeba odróżnić trzy rzeczy:
   demie nadal brzmi „popraw intercept”. Ukończona lekcja nie potwierdza więc opanowania tematu.
 
 Ekran „Lekcja ukończona” zadaje pytanie do przemyślenia („Zatrzymaj się na chwilę”), podpowiada, na
-co zwrócić uwagę, i pokazuje „Mini-check”. Notatki dla studentów zaznaczają, że pytania sprawdzające
-to „prompty do refleksji, a nie oceniane quizy”. Aplikacja nie zbiera odpowiedzi. Odpowiedz na nie
+co zwrócić uwagę, i zadaje pytania sprawdzające. Na `main` ta część ma nagłówek „Mini-check”, a w
+v0.0.9a „Sprawdź rozumienie”. Notatki dla studentów zaznaczają, że pytania sprawdzające to „prompty
+do refleksji, a nie oceniane quizy”. Aplikacja nie zbiera odpowiedzi. Odpowiedz na nie
 samodzielnie, a wyjaśnienie porównaj z celem lekcji i z teorią.
 
 Na gałęzi `main` ten ekran ma też „Samoocenę” z przyciskami „Rozumiem” i „Do powtórki”. Ten wybór to
 Twoja deklaracja. Aplikacja zapisuje go bez sprawdzania odpowiedzi, a później można go zmienić.
 „Raport postępu” na ekranie startowym pokazuje między innymi lekcje oznaczone do powtórki. W wydaniu
-v0.0.9a nie ma samooceny ani raportu.
+v0.0.9a nie ma raportu ani przycisków samooceny. W tym miejscu ekran ukończenia pokazuje „Szybki
+self-check” z dwiema stałymi wskazówkami.
 
 Teorię lekcji aplikacja oznacza jako przeczytaną po otwarciu ekranu teorii. Do ukończenia lekcji
 teoria nie jest potrzebna.
@@ -200,7 +202,7 @@ zmianie intercept. Aplikacja nie sprawdza wtedy residuals ani diagnozy. „Poró
 zostaje odhaczone po naciśnięciu `F`.
 
 **Sprawdź się:** ekran „Lekcja ukończona” pyta: „Jaki wzór residuals pokazał Ci, że prosta nadal
-jest przesunięta, i który parametr pomógł to zmniejszyć?”. Mini-check: „Czy umiesz wskazać
+jest przesunięta, i który parametr pomógł to zmniejszyć?”. Pytanie sprawdzające: „Czy umiesz wskazać
 residuals, które pokazują, że prosta nadal ma bias?”.
 
 ### Pozwól algorytmowi zmniejszać loss (Gradient Descent Playground) {#error-gradient-descent}
@@ -227,11 +229,11 @@ spadek loss” aplikacja sprawdza na historii loss. Zadanie zostaje odhaczone, g
 dwóch krokach loss jest niższy niż na początku przebiegu. Gdy loss rośnie, zadanie nie zostaje
 odhaczone.
 
-**Sprawdź się:** ekran „Lekcja ukończona” pyta: „Co działo się z loss, gdy learning rate był za
-mały albo za duży, i czym różnił się stabilny przebieg?”. Mini-check prosi o wyjaśnienie celu lekcji
-własnymi słowami i o wskazanie widocznego sygnału z dema, który go potwierdził. Plik z zadaniami do
-dema ma ćwiczenia z learning rate, szumem i seedem, wyzwanie „loss <= 1.0 przed upływem 80 kroków” i
-pytania kontrolne.
+**Sprawdź się:** ekran „Lekcja ukończona” pyta: „Co działo się z loss, gdy learning rate był za mały
+albo za duży, i czym różnił się stabilny przebieg?”. Pytania sprawdzające proszą o wyjaśnienie celu
+lekcji własnymi słowami i o wskazanie widocznego sygnału z dema, który go potwierdził. Plik z
+zadaniami do dema ma ćwiczenia z learning rate, szumem i seedem, wyzwanie „loss <= 1.0 przed upływem
+80 kroków” i pytania kontrolne.
 
 ### Zamień score na decyzję (Logistic Regression Boundary Lab) {#error-logistic-boundary}
 
@@ -255,10 +257,10 @@ threshold albo szumu. „Porównaj punkty pewne i graniczne” zostaje odhaczone
 treningu (`Space`) albo po jednym kroku (`N`). Aplikacja nie sprawdza, czy porównano punkty.
 
 **Sprawdź się:** ekran „Lekcja ukończona” pyta: „Które punkty zmieniły klasę po przesunięciu
-decision boundary i dlaczego punkty graniczne były mniej pewne?”. Mini-check prosi o wyjaśnienie
-celu lekcji własnymi słowami i o wskazanie sygnału z dema. Plik z zadaniami do dema prowadzi przez
-probability i klasę, threshold, confusion matrix, learning rate i szum. Ma też wyzwanie z precision
-i recall oraz pytania kontrolne.
+decision boundary i dlaczego punkty graniczne były mniej pewne?”. Pytania sprawdzające proszą o
+wyjaśnienie celu lekcji własnymi słowami i o wskazanie sygnału z dema. Plik z zadaniami do dema
+prowadzi przez probability i klasę, threshold, confusion matrix, learning rate i szum. Ma też
+wyzwanie z precision i recall oraz pytania kontrolne.
 
 ### Ucz się z poprzednich błędów (Boosting Mistake Lab) {#error-boosting-mistakes}
 
@@ -281,9 +283,9 @@ pary). `1`–`4` i `P` przełączają presety, `C` włącza i wyłącza widok co
 liczby rund. „Połącz wagę z błędem” zostaje odhaczone po naciśnięciu `C`, czyli po włączeniu albo
 wyłączeniu widoku confidence. Aplikacja nie sprawdza, czy znaleziono przykład ze zmienioną wagą.
 
-**Sprawdź się:** ekran „Lekcja ukończona” pyta: „Które błędy dostały więcej uwagi w kolejnej
-rundzie boosting i jak zmieniło to ensemble?”. Mini-check prosi o wyjaśnienie celu lekcji własnymi
-słowami i o wskazanie sygnału z dema. Plik z zadaniami do dema zaczyna od części, w których
+**Sprawdź się:** ekran „Lekcja ukończona” pyta: „Które błędy dostały więcej uwagi w kolejnej rundzie
+boosting i jak zmieniło to ensemble?”. Pytania sprawdzające proszą o wyjaśnienie celu lekcji
+własnymi słowami i o wskazanie sygnału z dema. Plik z zadaniami do dema zaczyna od części, w których
 uruchamiasz wersję tekstową i liczysz weighted error. Dalsze części dotyczą wizualizacji: etapów,
 widoku confidence, presetów, wyzwania i eksportu wyniku. Eksport (`E`) zapisuje plik JSON w katalogu
 `exports/` repozytorium, który Git ignoruje. Zadanie końcowe w tym pliku wymienia elementy „Do
