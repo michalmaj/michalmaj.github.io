@@ -54,6 +54,9 @@
 /courses/ai-and-machine-learning/
 /courses/ai-and-machine-learning/task-sets/how-models-learn-from-error/
 /courses/ai-and-machine-learning/task-sets/from-distance-to-clusters/
+/courses/ai-and-machine-learning/task-sets/from-good-scores-to-trustworthy-models/
+/courses/ai-and-machine-learning/task-sets/from-features-to-model-decisions/
+/courses/ai-and-machine-learning/task-sets/from-representation-to-model-behavior/
 /courses/ai-and-machine-learning/guides/course-materials/
 /courses/deep-learning/
 /courses/deep-learning/guides/course-materials/
