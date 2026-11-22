@@ -126,8 +126,8 @@ sprawdza, czy metryki wskazują różnych sąsiadów. „Porównaj metryki dista
 pierwszym naciśnięciu `M`, bez przejścia przez wszystkie trzy metryki.
 
 **Sprawdź się:** ekran „Lekcja ukończona” pyta: „Która metryka zmieniła nearest neighbor i co to
-mówi o tym, jak model czyta distance?”. Mini-check prosi o wyjaśnienie celu lekcji własnymi słowami
-i o wskazanie widocznego sygnału z dema, który go potwierdził.
+mówi o tym, jak model czyta distance?”. Pytania sprawdzające proszą o wyjaśnienie celu lekcji
+własnymi słowami i o wskazanie widocznego sygnału z dema, który go potwierdził.
 
 ### Klasyfikuj przez najbliższe przykłady (k-NN Vote Map) {#distance-knn-vote}
 
@@ -150,8 +150,8 @@ Kliknięcie w dowolnym miejscu dema też się liczy, także w panelu obok mapy, 
 sklasyfikowane. „Porównaj wartości k” zostaje odhaczone po pierwszej zmianie k.
 
 **Sprawdź się:** ekran „Lekcja ukończona” pyta: „Jak zmiana k wpłynęła na decision map i kiedy
-głosowanie było zbyt lokalne albo zbyt wygładzone?”. Mini-check prosi o wyjaśnienie celu lekcji
-własnymi słowami i o wskazanie sygnału z dema. Plik z zadaniami do dema ma ćwiczenia z
+głosowanie było zbyt lokalne albo zbyt wygładzone?”. Pytania sprawdzające proszą o wyjaśnienie celu
+lekcji własnymi słowami i o wskazanie sygnału z dema. Plik z zadaniami do dema ma ćwiczenia z
 klasyfikacją punktów, wartością k, szumem, seedem i mapą decyzji, wyzwanie z accuracy na ukrytym
 zbiorze testowym i pytania kontrolne.
 
@@ -179,8 +179,8 @@ zostaje odhaczone po pierwszym naciśnięciu `-` albo `=`. Aplikacja nie sprawdz
 inertia z interpretacją.
 
 **Sprawdź się:** ekran „Lekcja ukończona” pyta: „Co zmieniało się najpierw: przypisania punktów czy
-centroidy, i jak każdy krok zmniejszał błąd klastrowania?”. Mini-check prosi o wyjaśnienie celu
-lekcji własnymi słowami i o wskazanie sygnału z dema.
+centroidy, i jak każdy krok zmniejszał błąd klastrowania?”. Pytania sprawdzające proszą o
+wyjaśnienie celu lekcji własnymi słowami i o wskazanie sygnału z dema.
 
 ### Dopasuj clustering do kształtu (Clustering Lab) {#distance-clustering-shape}
 
@@ -210,8 +210,8 @@ same klawisze w trybie K-Means zmieniają k i tego zadania nie odhaczają. Aplik
 czy znaleziono dataset, na którym algorytmy dają różne wyniki.
 
 **Sprawdź się:** ekran „Lekcja ukończona” pyta: „Gdzie K-Means i DBSCAN dały różne wyniki i które
-założenie o kształcie klastrów wywołało tę różnicę?”. Mini-check prosi o wyjaśnienie celu lekcji
-własnymi słowami i o wskazanie sygnału z dema.
+założenie o kształcie klastrów wywołało tę różnicę?”. Pytania sprawdzające proszą o wyjaśnienie celu
+lekcji własnymi słowami i o wskazanie sygnału z dema.
 
 ### Czytaj soft cluster membership (Gaussian Mixture Intro Lab) {#distance-soft-clusters}
 
@@ -242,7 +242,7 @@ komponentów. Naciśnięcie `-` przy dwóch albo `=` przy czterech komponentach 
 Aplikacja nie sprawdza, czy porównano prawdopodobieństwa ani czy zauważono overfitting.
 
 **Sprawdź się:** ekran „Lekcja ukończona” pyta: „Który punkt miał mieszaną przynależność i czemu
-probability jest tam bardziej użyteczne niż twarda etykieta klastra?”. Mini-check prosi o
+probability jest tam bardziej użyteczne niż twarda etykieta klastra?”. Pytania sprawdzające proszą o
 wyjaśnienie celu lekcji własnymi słowami i o wskazanie sygnału z dema.
 
 ## Oczekiwane rezultaty
