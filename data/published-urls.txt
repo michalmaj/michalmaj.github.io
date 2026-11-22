@@ -52,6 +52,8 @@
 /courses/python-application-programming/task-sets/final-analytics-epilogue/
 /courses/python-application-programming/guides/course-materials/
 /courses/ai-and-machine-learning/
+/courses/ai-and-machine-learning/task-sets/how-models-learn-from-error/
+/courses/ai-and-machine-learning/task-sets/from-distance-to-clusters/
 /courses/ai-and-machine-learning/guides/course-materials/
 /courses/deep-learning/
 /courses/deep-learning/guides/course-materials/
