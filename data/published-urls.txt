@@ -61,6 +61,9 @@
 /courses/deep-learning/
 /courses/deep-learning/task-sets/fundamentals/
 /courses/deep-learning/task-sets/computer-vision-and-representations/
+/courses/deep-learning/task-sets/sequences-and-language/
+/courses/deep-learning/task-sets/generative-modeling/
+/courses/deep-learning/task-sets/evaluation-and-deployment/
 /courses/deep-learning/guides/course-materials/
 /courses/introduction-to-ai/
 /courses/introduction-to-ai/guides/supplementary-demos/
