@@ -97,7 +97,8 @@ podręcznej, nie pobierasz ich ponownie. Opis zasobów jest w [zestawie
   `~/.cache/torch`).
 
 Artefakt modelu z laboratorium 15 (`weights.pt` i `metadata.json`) powstaje lokalnie, w katalogu
-`artifacts/`, który nie trafia do Gita.
+`labs/15_production/artifacts/`, który nie trafia do Gita. Polecenie jest w opisie [laboratorium
+15](#lab-15).
 
 ## Samodzielna praca i sprawdzanie wyników
 
@@ -181,6 +182,23 @@ katalogu `labs/15_production/`. Instrukcja nie wymaga osobnego procesu serwera (
 kontenera ani chmury: notebook wywołuje aplikację przez `fastapi.testclient.TestClient`, w tym samym
 procesie, przez warstwę HTTP i walidacji.
 
+**Przygotowanie artefaktu:** gotowy skrypt `prepare_artifact.py` uruchamiasz z katalogu
+laboratorium. Z katalogu głównego repozytorium:
+
+```bash
+cd labs/15_production
+uv run python prepare_artifact.py
+cd ../..
+```
+
+Skrypt zapisuje artefakt (`weights.pt` i `metadata.json`) w katalogu
+`labs/15_production/artifacts/`. Tam szukają go notebook i aplikacja, więc nie potrzebujesz
+dodatkowej konfiguracji ścieżek. Przy pierwszym uruchomieniu skrypt pobiera EuroSAT i wagi ResNet18,
+jeśli nie ma ich jeszcze w pamięci podręcznej. Ostatnie polecenie wraca do katalogu głównego
+repozytorium, z którego uruchamiasz pozostałe polecenia instrukcji, np. testy. Instrukcja i sekcja 1
+notebooka podają inne polecenie, uruchamiane z katalogu głównego. Różnicę wyjaśnia punkt „Skąd
+`FileNotFoundError`” w części „Sprawdź się”.
+
 **Cel:** przygotować i zweryfikować artefakt modelu, zaimplementować preprocessing, inferencję i
 endpoint `/predict`, zmierzyć koszt usługi, wykrywać drift wskaźnikiem PSI i zdiagnozować
 training-serving skew.
@@ -192,11 +210,11 @@ training-serving skew.
   `histogram_counts` i `brightness_feature` w `monitoring.py`. Uzupełniasz `preprocess_image_bytes`
   i `predict` w `app/model.py`, `/predict` w `app/server.py`, `compute_stats` w `benchmark.py`,
   `psi` w `monitoring.py` oraz komórki `TODO` w notebooku.
-- **Artefakt (sekcja 1):** uruchamiasz `prepare_artifact.py`, który trenuje głowicę na zamrożonych
-  cechach i zapisuje `weights.pt` oraz `metadata.json`, a potem w kodzie potwierdzasz identyczne
-  logity (`torch.equal`). Instrukcja porównuje model wczytany z artefaktu z modelem bezpośrednio po
-  treningu, a komentarz `TODO` w notebooku opisuje porównanie `predict()` z ręcznym przejściem przez
-  preprocessing i model wczytany z artefaktu.
+- **Artefakt (sekcja 1):** uruchamiasz `prepare_artifact.py` (polecenie wyżej), który trenuje
+  głowicę na zamrożonych cechach i zapisuje `weights.pt` oraz `metadata.json`, a potem w kodzie
+  potwierdzasz identyczne logity (`torch.equal`). Instrukcja porównuje model wczytany z artefaktu z
+  modelem bezpośrednio po treningu, a komentarz `TODO` w notebooku opisuje porównanie `predict()` z
+  ręcznym przejściem przez preprocessing i model wczytany z artefaktu.
 - **Preprocessing i `/predict` (sekcje 2–3):** `preprocess_image_bytes` dekoduje obraz przez gotowe
   `decode_image_bytes` i stosuje `ResNet18_Weights.IMAGENET1K_V1.transforms()`, bez ręcznego
   odtwarzania kroków. `predict` zwraca `predicted_class`, `confidence` i `model_version`. `/predict`
@@ -228,13 +246,15 @@ scenariuszami A/B/C, diagnozą skew i raportem.
 
 **Sprawdź się:**
 
-- **Gdzie jest artefakt:** `prepare_artifact.py` zapisuje `artifacts/` w katalogu, z którego go
-  uruchamiasz, albo w katalogu ze zmiennej `MODULE15_ARTIFACT_DIR`. Aplikacja (`app/server.py`)
-  szuka artefaktu tak samo: w `artifacts/` względem bieżącego katalogu procesu, czyli w notebooku
-  `labs/15_production/`, albo w katalogu ze zmiennej `MODULE15_ARTIFACT_DIR`. Komentarz `TODO` w
-  sekcji 1 wczytuje `load_artifact("artifacts")`, też względem katalogu notebooka. Polecenie z
-  instrukcji uruchomione z katalogu głównego repozytorium zapisuje więc artefakt w `artifacts/`
-  katalogu głównego, a notebook i aplikacja go tam nie szukają i zgłaszają `FileNotFoundError`.
+- **Skąd `FileNotFoundError`:** `prepare_artifact.py` zapisuje `artifacts/` względem katalogu, z
+  którego go uruchamiasz. Notebook (komentarz `TODO` w sekcji 1 wczytuje
+  `load_artifact("artifacts")`) i aplikacja (`app/server.py`) szukają artefaktu w `artifacts/`
+  względem bieżącego katalogu kernela. W JupyterLab jest nim katalog notebooka,
+  `labs/15_production/`. Polecenie z instrukcji i z sekcji 1 notebooka,
+  `uv run python labs/15_production/prepare_artifact.py`, uruchomione z katalogu głównego
+  repozytorium zapisuje więc artefakt w `artifacts/` katalogu głównego. Notebook i aplikacja go tam
+  nie szukają i zgłaszają `FileNotFoundError`. Polecenie z opisu zadania, uruchomione z katalogu
+  laboratorium, zapisuje artefakt tam, gdzie go szukają.
 - **Testy z instrukcji:** `uv run pytest tests/test_lab_15_scaffold.py -v` sprawdza gotowe części
   aplikacji (kontrakt artefaktu, endpointy, limity uploadu, histogram) i to, że części do
   uzupełnienia jeszcze zgłaszają `NotImplementedError`. Po uzupełnieniu kodu testy z
